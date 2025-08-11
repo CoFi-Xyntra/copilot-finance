@@ -1,0 +1,4 @@
+service : {
+  handle_prompt : (text, text) -> (text);
+  pending_count : () -> (nat) query;
+}

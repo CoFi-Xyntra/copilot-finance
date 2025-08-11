@@ -1,0 +1,9 @@
+type ResultNull = variant { Ok : null; Err : text };
+
+service : {
+  add_tool     : (text) -> (ResultNull);
+  update_tool  : (text) -> (ResultNull);
+  list_tools   : () -> (vec text) query;
+  get_tool     : (text) -> (opt text) query;
+  get_manifest : () -> (text) query;
+}

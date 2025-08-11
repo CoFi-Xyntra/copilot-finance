@@ -6,9 +6,9 @@
       "shrink": true,
       "gzip": true,
       "wasm": "target/wasm32-unknown-unknown/release/backend.wasm",
-      "build": [
-        "cargo build --target wasm32-unknown-unknown --release -p backend",
-        "candid-extractor target/wasm32-unknown-unknown/release/backend.wasm > backend/backend.did"
+     "build": [
+      "cargo build --target wasm32-unknown-unknown --release -p backend",
+      "bash -lc 'candid-extractor target/wasm32-unknown-unknown/release/backend.wasm > backend/backend.did'"
       ],
       "metadata": [
         {
@@ -38,3 +38,4 @@
   },
   "output_env_file": ".env"
 }
+

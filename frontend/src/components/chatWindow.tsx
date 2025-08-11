@@ -21,6 +21,23 @@ export default function ChatWindow() {
 
   const askAgent = async (messages) => {
     try {
+      // if (chat.length == 1) {
+          messages = [
+            {
+              system: {
+                content: `Kamu adalah AI assistant yang hanya membalas dalam JSON valid seperti:
+                        {
+                        "action": "transfer",
+                        "amount": 50,
+                        "currency": "USDC",
+                        "to": "0xabc123",
+                        "network": "bsc"
+                        }`
+                }
+              }
+          , ...messages];
+      // }
+      console.log("ask agent", messages)
       const response = await backend.chat(messages);
       setChat((prevChat) => {
         const newChat = [...prevChat];
