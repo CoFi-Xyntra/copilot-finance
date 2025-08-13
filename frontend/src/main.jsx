@@ -1,14 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { backend } from 'declarations/backend';
-import botImg from '/bot.svg';
-import userImg from '/user.svg';
-import Sidebar from './components/Sidebar'
-import ChatWindow from './components/ChatWindow'
+import { backend } from '../../src/declarations/backend';
+import ChatWindow from './components/chatWindow';
 import '/index.css';
-import { createThirdwebClient } from "thirdweb";
 import { client } from "./../config/client";
-import { useProfiles, useActiveAccount, ConnectButton, ThirdwebProvider } from "thirdweb/react";
+import { useActiveAccount, ConnectButton, ThirdwebProvider } from "thirdweb/react";
 
 export  function WalletConnectComponent() {
   const account = useActiveAccount(); // thirdweb hook
