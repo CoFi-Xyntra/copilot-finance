@@ -34,11 +34,11 @@ export  function WalletConnectComponent() {
             
       <ChatWindow />
        <div className="w-64 bg-zinc-800 p-4 flex flex-col">
-          {/* <ConnectButton client={client} /> */}
-          {/* <WalletConnectComponent></WalletConnectComponent> */}
             <ConnectPlugButton
-              whitelist={[/* LEDGER_CANISTER_ID, BACKEND_CANISTER_ID */]}
-              host="https://ic0.app"   // ICP mainnet
+               ledgers={[
+                  { canisterId: "mxzaz-hqaaa-aaaar-qaada-cai", label: "CFXN" }, // ledger ICRC-1 lokal kamu
+                ]}    
+               host="http://127.0.0.1:4943"
             />
       </div>
     </div>
