@@ -14,8 +14,8 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
 use ic_cdk::println;
 
-mod types;
-mod utils;
+pub mod types;
+pub mod utils;
 
 use types::{PlanArgs, TransferPlan, SavedAccount};
 use utils::{
