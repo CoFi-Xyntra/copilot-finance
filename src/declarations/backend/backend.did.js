@@ -18,11 +18,20 @@ export const idlFactory = ({ IDL }) => {
     'assistant' : AssistantMessage,
     'system' : IDL.Record({ 'content' : IDL.Text }),
   });
+  const SavedAccount = IDL.Record({
+    'alias' : IDL.Text,
+    'owner' : IDL.Principal,
+    'subaccount' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+  });
+  const Result = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
   return IDL.Service({
-    'chat' : IDL.Func([IDL.Vec(ChatMessage)], [IDL.Text], []),
-    'create_account' : IDL.Func([IDL.Text], [IDL.Text], []),
-    'get_accounts' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
-    'prompt' : IDL.Func([IDL.Text], [IDL.Text], []),
+    'copilot_chat' : IDL.Func([IDL.Vec(ChatMessage)], [IDL.Text], []),
+    'list_accounts' : IDL.Func([], [IDL.Vec(SavedAccount)], ['query']),
+    'save_account' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Opt(IDL.Vec(IDL.Nat8))],
+        [Result],
+        [],
+      ),
   });
 };
 export const init = ({ IDL }) => { return []; };

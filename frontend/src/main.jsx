@@ -9,13 +9,14 @@ import '/index.css';
 import { createThirdwebClient } from "thirdweb";
 import { client } from "./../config/client";
 import { useProfiles, useActiveAccount, ConnectButton, ThirdwebProvider } from "thirdweb/react";
+import { ConnectPlugButton } from "./components/connectButton";
 
 export  function WalletConnectComponent() {
   const account = useActiveAccount(); // thirdweb hook
 
   useEffect(() => {
     if (account) {
-      // Saat wallet terhubung
+    
       const address = account.address;
       console.log("Wallet connected:", address);
 
@@ -33,8 +34,12 @@ export  function WalletConnectComponent() {
             
       <ChatWindow />
        <div className="w-64 bg-zinc-800 p-4 flex flex-col">
-          {/* <ConnectButton client={client} /> */}
-          <WalletConnectComponent></WalletConnectComponent>
+            <ConnectPlugButton
+               ledgers={[
+                  { canisterId: "mxzaz-hqaaa-aaaar-qaada-cai", label: "CFXN" }, // ledger ICRC-1 lokal kamu
+                ]}    
+               host="http://127.0.0.1:4943"
+            />
       </div>
     </div>
   )

@@ -9,11 +9,16 @@ type ChatMessage = variant {
   system : record { content : text };
 };
 type FunctionCall = record { name : text; arguments : vec ToolCallArgument };
+type Result = variant { Ok; Err : text };
+type SavedAccount = record {
+  alias : text;
+  owner : principal;
+  subaccount : opt blob;
+};
 type ToolCall = record { id : text; function : FunctionCall };
 type ToolCallArgument = record { value : text; name : text };
 service : {
-  chat : (vec ChatMessage) -> (text);
-  create_account : (text) -> (text);
-  get_accounts : () -> (vec text) query;
-  prompt : (text) -> (text);
+  copilot_chat : (vec ChatMessage) -> (text);
+  list_accounts : () -> (vec SavedAccount) query;
+  save_account : (text, text, opt blob) -> (Result);
 }
