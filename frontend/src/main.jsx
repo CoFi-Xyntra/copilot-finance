@@ -1,12 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { backend } from 'declarations/backend';
-import botImg from '/bot.svg';
-import userImg from '/user.svg';
-import Sidebar from './components/Sidebar'
-import ChatWindow from './components/ChatWindow'
+import { backend } from '../../src/declarations/backend';
+import ChatWindow from './components/chatWindow';
+import LandingPage from './components/landingPage';
 import '/index.css';
-import { createThirdwebClient } from "thirdweb";
 import { client } from "./../config/client";
 import { useProfiles, useActiveAccount, ConnectButton, ThirdwebProvider } from "thirdweb/react";
 import { ConnectPlugButton } from "./components/connectButton";
@@ -29,17 +26,26 @@ export  function WalletConnectComponent() {
   return <ConnectButton client={client} />;
 }
  function App() {
+  const [showLanding, setShowLanding] = useState(true);
+
+  const handleEnterApp = () => {
+    setShowLanding(false);
+  };
+
+  if (showLanding) {
+    return <LandingPage onEnterApp={handleEnterApp} />;
+  }
+
   return (
     <div className="flex h-screen dark bg-zinc-900 text-white">
-            
       <ChatWindow />
-       <div className="w-64 bg-zinc-800 p-4 flex flex-col">
-            <ConnectPlugButton
-               ledgers={[
-                  { canisterId: "mxzaz-hqaaa-aaaar-qaada-cai", label: "CFXN" }, // ledger ICRC-1 lokal kamu
-                ]}    
-               host="http://127.0.0.1:4943"
-            />
+      <div className="w-64 bg-zinc-800 p-4 flex flex-col">
+        <ConnectPlugButton
+          ledgers={[
+            { canisterId: "mxzaz-hqaaa-aaaar-qaada-cai", label: "CFXN" }, // ledger ICRC-1 lokal kamu
+          ]}    
+          host="http://127.0.0.1:4943"
+        />
       </div>
     </div>
   )
