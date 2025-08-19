@@ -13,3 +13,14 @@ path = "lib.rs"
 candid = "0.10.13"
 ic-cdk = "0.17.1"
 ic-llm = "1.1.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+icrc-ledger-types = "0.1.5"
+regex = "1"                           # Untuk parse prompt sederhana (opsional kalau semua by tools)
+sha2 = "0.10"                         # Untuk checksum plan transfer
+hex = "0.4"
+
+# Number types
+num-traits = "0.2" 
+num-bigint = "0.4"

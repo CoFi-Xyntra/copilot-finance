@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { backend } from '../../../src/declarations/backend';
+import MessageInput from './messageInput';
+import { 
+  backend,
+  idlFactory as backend_idlFactory,
+  canisterId as backend_canisterId,
+} from '../../../src/declarations/backend';
 
-// Definir tipos para los mensajes
+// Define message types
 type SystemMessage = { system: { content: string } };
 type UserMessage = { user: { content: string } };
 type ChatMessage = SystemMessage | UserMessage;
@@ -10,7 +15,7 @@ export default function ChatWindow() {
 
   const [chat, setChat] = useState<ChatMessage[]>([
     {
-      system: { content: "I'm a Copilot Finance agent living on the Internet Computer. Ask me anything." }
+      system: { content: "I'm Cofi Xyntra, your financial copilot on the Internet Computer. I can help you check balances and send tokens" }
     }
   ]);
   const [inputValue, setInputValue] = useState('');
@@ -25,7 +30,9 @@ export default function ChatWindow() {
 
   const askAgent = async (messages: ChatMessage[]) => {
     try {
-      const response = await backend.chat(messages);
+    // const p = await window.ic?.plug?.getPrincipal();
+    //   const actor = await window.ic!.plug!.createA. 
+      const response = await backend.copilot_chat(messages);
       setChat((prevChat) => {
         const newChat = [...prevChat];
         newChat.pop(); // Remove the "Thinking..." message

@@ -1,17 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { backend } from '../../src/declarations/backend';
 import ChatWindow from './components/chatWindow';
+import LandingPage from './components/landingPage';
 import '/index.css';
 import { client } from "./../config/client";
-import { useActiveAccount, ConnectButton, ThirdwebProvider } from "thirdweb/react";
+import { useProfiles, useActiveAccount, ConnectButton, ThirdwebProvider } from "thirdweb/react";
+import { ConnectPlugButton } from "./components/connectButton";
 
 export  function WalletConnectComponent() {
   const account = useActiveAccount(); // thirdweb hook
 
   useEffect(() => {
     if (account) {
-      // Saat wallet terhubung
+    
       const address = account.address;
       console.log("Wallet connected:", address);
 
@@ -24,13 +26,26 @@ export  function WalletConnectComponent() {
   return <ConnectButton client={client} />;
 }
  function App() {
+  const [showLanding, setShowLanding] = useState(true);
+
+  const handleEnterApp = () => {
+    setShowLanding(false);
+  };
+
+  if (showLanding) {
+    return <LandingPage onEnterApp={handleEnterApp} />;
+  }
+
   return (
     <div className="flex h-screen dark bg-zinc-900 text-white">
-            
       <ChatWindow />
-       <div className="w-64 bg-zinc-800 p-4 flex flex-col">
-          {/* <ConnectButton client={client} /> */}
-          <WalletConnectComponent></WalletConnectComponent>
+      <div className="w-64 bg-zinc-800 p-4 flex flex-col">
+        <ConnectPlugButton
+          ledgers={[
+            { canisterId: "mxzaz-hqaaa-aaaar-qaada-cai", label: "CFXN" }, // ledger ICRC-1 lokal kamu
+          ]}    
+          host="http://127.0.0.1:4943"
+        />
       </div>
     </div>
   )
