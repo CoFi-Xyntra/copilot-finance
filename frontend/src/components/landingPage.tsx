@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ConnectPlugButton } from './connectButton';
+import { Navbar } from './navbar';
+import { ProductsSection } from './productsSection';
+import { AboutSection } from './aboutSection';
+import { DocumentationSection } from './documentationSection';
 
 interface LandingPageProps {
   onEnterApp: () => void;
@@ -184,8 +188,6 @@ const AILogo = () => {
           </div>
         </div>
         {/* AI Brain Icon Animation */}
-        <div className="absolute -top-4 -right-8 text-2xl animate-bounce">🧠</div>
-        <div className="absolute -top-2 -left-8 text-xl animate-pulse">⚡</div>
       </div>
       <div className="text-center mt-4">
         <div className="text-2xl font-light text-gray-300 tracking-[0.5em]">
@@ -223,7 +225,8 @@ const AnimatedText = () => {
 
 export default function LandingPage({ onEnterApp }: LandingPageProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [currentText, setCurrentText] = useState(0);  const texts = [
+  const [currentText, setCurrentText] = useState(0);
+  const [currentSection, setCurrentSection] = useState('home');  const texts = [
     "Your Intelligent Financial Copilot",
     "Navigate DeFi with AI Precision", 
     "Smart Trading, Smarter Returns",
@@ -242,11 +245,55 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
     return () => clearInterval(interval);
   }, [texts.length]);
 
+  // Handle section navigation
+  const handleSectionClick = (section: string) => {
+    setCurrentSection(section);
+    
+    if (section === 'app') {
+      onEnterApp();
+      return;
+    }
+    
+    const element = document.getElementById(section);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Update current section based on scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['home', 'products', 'documentation', 'about'];
+      const scrollPosition = window.scrollY + 100;
+
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element) {
+          const offsetTop = element.offsetTop;
+          const offsetBottom = offsetTop + element.offsetHeight;
+
+          if (scrollPosition >= offsetTop && scrollPosition < offsetBottom) {
+            setCurrentSection(section);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-800 text-white relative overflow-hidden">
-      <AnimatedBackground />
-      <BTCTicker />
-      <AIStatusIndicator />
+      {/* Navbar */}
+      <Navbar onSectionClick={handleSectionClick} currentSection={currentSection} />
+      
+      {/* Home Section */}
+      <section id="home" className="relative">
+        <AnimatedBackground />
+        <BTCTicker />
+        <AIStatusIndicator />
       
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16 relative z-10">
@@ -277,6 +324,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
               Experience the future of decentralized finance with the power of artificial intelligence. 
               Manage tokens, verify balances, and interact with DeFi protocols intelligently and securely.
             </p>
+            <br />
           </div>
 
           {/* Connect Wallet Button CENTRADO con efectos mejorados */}
@@ -305,20 +353,12 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
               <div className="absolute -bottom-2 -right-2 w-2 h-2 bg-purple-400 rounded-full animate-ping opacity-60" style={{ animationDelay: '1s' }}></div>
               <div className="absolute top-1/2 -left-4 w-1 h-1 bg-blue-400 rounded-full animate-pulse"></div>
               <div className="absolute top-1/2 -right-4 w-1 h-1 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-              
-              {/* Bitcoin symbols around button */}
-              <div className="absolute -top-6 left-1/4 text-orange-400/60 text-sm animate-bounce">₿</div>
-              <div className="absolute -bottom-6 right-1/4 text-orange-400/60 text-sm animate-bounce" style={{ animationDelay: '1s' }}>₿</div>
             </div>
-            
+            <br />
             <p className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-sm text-zinc-400 animate-pulse whitespace-nowrap">
               🚀 Connect your wallet to start your DeFi journey
             </p>
             
-            {/* Data Flow Animation */}
-            <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
-              <div className="w-1 h-8 bg-gradient-to-b from-cyan-400 to-transparent animate-pulse"></div>
-            </div>
           </div>
         </div>
 
@@ -418,7 +458,17 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
             © 2025 COFI XYNTRA. The future of decentralized finance is here
           </p>
         </div>
-      </div>
+        </div>
+      </section>
+
+      {/* Products Section */}
+      <ProductsSection />
+
+      {/* Documentation Section */}
+      <DocumentationSection />
+
+      {/* About Section */}
+      <AboutSection />
 
       {/* CSS para el nuevo fondo fluido */}
       <style>{`
