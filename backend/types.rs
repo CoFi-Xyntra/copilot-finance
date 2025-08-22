@@ -16,7 +16,7 @@ pub struct TokenEntry {
 /// Tokens permitted for transfers.
 pub const TOKENS: &[TokenEntry] = &[
     TokenEntry { symbol: "ICP",  ledger: "<LEDGER_ICP_ID>",      decimals: 8 },
-    TokenEntry { symbol: "CFXN", ledger: "mxzaz-hqaaa-aaaar-qaada-cai",     decimals: 0 },
+    TokenEntry { symbol: "CFX", ledger: "umunu-kh777-77774-qaaca-cai",     decimals: 0 },
 ];
 
 /// Stored reference to a user account alias.
