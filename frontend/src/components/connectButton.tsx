@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useState } from "react";
 import { usePlug, type AssetBalance, type LedgerConfig } from "./../helper/usePlug";
 
@@ -8,7 +9,11 @@ type Props = {
   ledgers?: LedgerConfig[];             // <<— tambah: daftar ledger ICRC-1 utk discan
 };
 
-export const ConnectPlugButton: React.FC<Props> = ({ whitelist, host, className, ledgers }) => {
+export const ConnectPlugButton: React.FC<Props> = (props) => {
+  // console.log("whitelist",whitelist, host, className, ledgers);
+   console.log("ConnectPlugButton props ->", props);
+
+  const { whitelist, host, className, ledgers } = props;
   const plug = usePlug({ whitelist, host, ledgers }); // whitelist & host diteruskan ke hook
   const [loading, setLoading] = useState(false);
   const [assets, setAssets] = useState<AssetBalance[]>([]);
@@ -23,7 +28,6 @@ export const ConnectPlugButton: React.FC<Props> = ({ whitelist, host, className,
         try {
           const list = await plug.fetchAssets();
           setAssets(list);
-          console.log("assets", list);
         } catch (e) {
           console.error(e);
         }
@@ -51,11 +55,10 @@ export const ConnectPlugButton: React.FC<Props> = ({ whitelist, host, className,
   const handleConnect = async () => {
     setLoading(true);
     try {
-      const ok = await plug.connect({ whitelist, host });
+      const ok = await plug.connect({ whitelist, host, ledgers });
       if (ok) {
         const list = await plug.fetchAssets(); // aman di sini
         setAssets(list);
-        console.log("assets", list);
       }
     } finally {
       setLoading(false);

@@ -2,17 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import MessageInput from './messageInput';
 import { 
   backend,
-  idlFactory as backend_idlFactory,
+  idlFactory,
   canisterId as backend_canisterId,
 } from '../../../src/declarations/backend';
+import { Actor, HttpAgent } from '@dfinity/agent';
 
+import { usePlug } from "../helper/usePlug";  
+import { _SERVICE } from '../../../src/declarations/backend/backend.did';
 // Define message types
 type SystemMessage = { system: { content: string } };
 type UserMessage = { user: { content: string } };
 type ChatMessage = SystemMessage | UserMessage;
 
 export default function ChatWindow() {
-
+  const { connected, connect, createActor } = usePlug({
+      host: 'http://127.0.0.1:4943',
+      whitelist: ['uxrrr-q7777-77774-qaaaq-cai'],
+    });
   const [chat, setChat] = useState<ChatMessage[]>([
     {
       system: { content: "I'm Cofi Xyntra, your financial copilot on the Internet Computer. I can help you check balances and send tokens" }
@@ -31,8 +37,21 @@ export default function ChatWindow() {
   const askAgent = async (messages: ChatMessage[]) => {
     try {
     // const p = await window.ic?.plug?.getPrincipal();
-    //   const actor = await window.ic!.plug!.createA. 
-      const response = await backend.copilot_chat(messages);
+    //   const actor = await window.ic!.plug!.createA.
+        // const agent = new HttpAgent({ host: 'http://127.0.0.1:4943' }); 
+        // const actor: any = Actor.createActor(idlFactory, {
+        //         agent,
+        //         canisterId: 'uxrrr-q7777-77774-qaaaq-cai'
+        //       });
+                 // ambil actor dari hook (identity = Plug)
+      const actor = await createActor<_SERVICE>('uxrrr-q7777-77774-qaaaq-cai', idlFactory);
+
+    // const actor = await createActor('uxrrr-q7777-77774-qaaaq-cai', idlFactory);
+      const response = await actor.copilot_chat(messages);
+      // await agent.execute();
+      console.log("response",response);
+      // actor.execute();
+      // const response = await backend.copilot_chat(messages);
       setChat((prevChat) => {
         const newChat = [...prevChat];
         newChat.pop(); // Remove the "Thinking..." message

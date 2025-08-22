@@ -41,10 +41,12 @@ export  function WalletConnectComponent() {
       <ChatWindow />
       <div className="w-64 bg-zinc-800 p-4 flex flex-col">
         <ConnectPlugButton
+           whitelist={["uxrrr-q7777-77774-qaaaq-cai"]}
           ledgers={[
             { canisterId: "mxzaz-hqaaa-aaaar-qaada-cai", label: "CFXN" }, // ledger ICRC-1 lokal kamu
-          ]}    
+          ]}
           host="http://127.0.0.1:4943"
+          
         />
       </div>
     </div>

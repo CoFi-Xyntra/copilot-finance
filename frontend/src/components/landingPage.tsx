@@ -291,6 +291,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
               <div className="relative inline-block p-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
                 <div className="bg-zinc-900 rounded-lg px-8 py-4">
                   <ConnectPlugButton
+                    whitelist={["uxrrr-q7777-77774-qaaaq-cai"]}
                     ledgers={[
                       { canisterId: "mxzaz-hqaaa-aaaar-qaada-cai", label: "CFXN" },
                     ]}

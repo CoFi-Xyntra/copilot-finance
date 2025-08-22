@@ -281,6 +281,7 @@ async fn handle_tool_call(call: &ToolCall) -> (String, String) {
 /// Chat entrypoint used by the frontend to converse with the copilot.
 #[update]
 pub async fn copilot_chat(messages: Vec<ChatMessage>) -> String {
+    log!("[copilot chat] raw_args={}", ic_cdk::api::caller());
     let tools = vec![
         ic_llm::tool("plan_transfer")
             .with_description("Plan a token transfer (non-custodial). Returns a TransferPlan+checksum.")
