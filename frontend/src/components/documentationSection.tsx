@@ -148,22 +148,6 @@ export const DocumentationSection: React.FC = () => {
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="max-w-2xl mx-auto mb-12">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search documentation..."
-              className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-6 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
-            />
-            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
         {/* Category Navigation */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {documentationCategories.map((category) => (
@@ -218,12 +202,12 @@ export const DocumentationSection: React.FC = () => {
               </div>
 
               {/* Action Button */}
-              <button className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors">
+              <a href="https://docs.cofi-xyntra.roracash.com/" target="_blank" className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors">
                 <span>Read More</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-              </button>
+              </a>
             </div>
           ))}
         </div>
@@ -234,27 +218,33 @@ export const DocumentationSection: React.FC = () => {
             <div className="text-3xl mb-4">💬</div>
             <h3 className="text-xl font-bold text-white mb-2">Community Support</h3>
             <p className="text-gray-300 mb-4">Join our Discord for real-time help and discussions</p>
-            <button className="text-purple-400 hover:text-purple-300 transition-colors">
-              Join Discord →
-            </button>
+            <a href="https://discord.gg/8RvnTUUY45" target="_blank" rel="noopener noreferrer">
+              <button className="text-purple-400 hover:text-purple-300 transition-colors">
+                Join Discord →
+              </button>
+            </a>
           </div>
 
           <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl p-6 border border-green-500/20">
             <div className="text-3xl mb-4">📺</div>
             <h3 className="text-xl font-bold text-white mb-2">Video Tutorials</h3>
             <p className="text-gray-300 mb-4">Watch step-by-step video guides on YouTube</p>
-            <button className="text-green-400 hover:text-green-300 transition-colors">
-              Watch Videos →
-            </button>
+            <a href="https://youtu.be/1H9N9YJLtoM" target="_blank" rel="noopener noreferrer">
+              <button className="text-green-400 hover:text-green-300 transition-colors">
+                Watch Videos →
+              </button>
+            </a>
           </div>
 
           <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-xl p-6 border border-orange-500/20">
             <div className="text-3xl mb-4">🎓</div>
             <h3 className="text-xl font-bold text-white mb-2">DeFi Academy</h3>
             <p className="text-gray-300 mb-4">Comprehensive courses on DeFi and blockchain</p>
-            <button className="text-orange-400 hover:text-orange-300 transition-colors">
-              Start Learning →
-            </button>
+            <a href="https://discord.gg/8RvnTUUY45" target="_blank" rel="noopener noreferrer">
+              <button className="text-orange-400 hover:text-orange-300 transition-colors">
+                Start Learning →
+              </button>
+            </a>
           </div>
         </div>
       </div>
