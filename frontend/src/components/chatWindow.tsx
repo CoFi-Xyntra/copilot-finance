@@ -4,33 +4,38 @@ import {
   backend,
   idlFactory as backend_idlFactory,
   canisterId as backend_canisterId,
-} from 'declarations/backend';
-import type { _SERVICE as BackendService } from 'declarations/backend/backend.did';
+} from '../../../src/declarations/backend';
+
+// Define message types
+type SystemMessage = { system: { content: string } };
+type UserMessage = { user: { content: string } };
+type ChatMessage = SystemMessage | UserMessage;
+
 export default function ChatWindow() {
 
-    const [chat, setChat] = useState([
+  const [chat, setChat] = useState<ChatMessage[]>([
     {
       system: { content: "I'm Cofi Xyntra, your financial copilot on the Internet Computer. I can help you check balances and send tokens" }
     }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const chatBoxRef = useRef(null);
+  const chatBoxRef = useRef<HTMLDivElement>(null);
 
-  const formatDate = (date) => {
+  const formatDate = (date: Date) => {
     const h = '0' + date.getHours();
     const m = '0' + date.getMinutes();
     return `${h.slice(-2)}:${m.slice(-2)}`;
   };
 
-  const askAgent = async (messages) => {
+  const askAgent = async (messages: ChatMessage[]) => {
     try {
     // const p = await window.ic?.plug?.getPrincipal();
     //   const actor = await window.ic!.plug!.createA. 
       const response = await backend.copilot_chat(messages);
       setChat((prevChat) => {
         const newChat = [...prevChat];
-        newChat.pop();
+        newChat.pop(); // Remove the "Thinking..." message
         newChat.push({ system: { content: response } });
         return newChat;
       });
@@ -43,7 +48,7 @@ export default function ChatWindow() {
       }
       setChat((prevChat) => {
         const newChat = [...prevChat];
-        newChat.pop();
+        newChat.pop(); // Remove the "Thinking..." message
         return newChat;
       });
     } finally {
@@ -51,21 +56,22 @@ export default function ChatWindow() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || isLoading) return;
 
-    const userMessage = {
+    const userMessage: UserMessage = {
       user: { content: inputValue }
     };
-    const thinkingMessage = {
+    const thinkingMessage: SystemMessage = {
       system: { content: 'Thinking ...' }
     };
+    
     setChat((prevChat) => [...prevChat, userMessage, thinkingMessage]);
     setInputValue('');
     setIsLoading(true);
 
-    const messagesToSend = chat.slice(1).concat(userMessage);
+    const messagesToSend = chat.slice(1).concat([userMessage]);
     askAgent(messagesToSend);
   };
 
@@ -75,12 +81,11 @@ export default function ChatWindow() {
     // }
   }, [chat]);
 
-
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <div className="flex-1 overflow-auto p-6 space-y-4 flex flex-col" ref={chatBoxRef}>
         {chat.map((message, index) => {
-          const isUser = !!message.user;
+          const isUser = 'user' in message;
           const content = isUser ? message.user.content : message.system.content;
 
           return (

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Principal } from "@dfinity/principal";
 import { HttpAgent, Actor } from "@dfinity/agent";
-import { LedgerCanister } from "@dfinity/ledger-icp";
 
 declare global {
   interface Window {
