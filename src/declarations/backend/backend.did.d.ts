@@ -16,6 +16,11 @@ export interface FunctionCall {
   'name' : string,
   'arguments' : Array<ToolCallArgument>,
 }
+export interface HttpResponse {
+  'status' : bigint,
+  'body' : Uint8Array | number[],
+  'headers' : Array<ToolCallArgument>,
+}
 export type Result = { 'Ok' : null } |
   { 'Err' : string };
 export interface SavedAccount {
@@ -25,6 +30,10 @@ export interface SavedAccount {
 }
 export interface ToolCall { 'id' : string, 'function' : FunctionCall }
 export interface ToolCallArgument { 'value' : string, 'name' : string }
+export interface TransformArgs {
+  'context' : Uint8Array | number[],
+  'response' : HttpResponse,
+}
 export interface _SERVICE {
   'copilot_chat' : ActorMethod<[Array<ChatMessage>], string>,
   'list_accounts' : ActorMethod<[], Array<SavedAccount>>,
@@ -32,6 +41,7 @@ export interface _SERVICE {
     [string, string, [] | [Uint8Array | number[]]],
     Result
   >,
+  'transform_json' : ActorMethod<[TransformArgs], HttpResponse>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

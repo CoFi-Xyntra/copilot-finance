@@ -63,6 +63,7 @@ dependencies = [
  "num-traits",
  "pocket-ic",
  "regex",
+ "reqwest",
  "serde",
  "serde_json",
  "sha2",

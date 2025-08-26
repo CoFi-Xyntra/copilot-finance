@@ -9,6 +9,11 @@ type ChatMessage = variant {
   system : record { content : text };
 };
 type FunctionCall = record { name : text; arguments : vec ToolCallArgument };
+type HttpResponse = record {
+  status : nat;
+  body : blob;
+  headers : vec ToolCallArgument;
+};
 type Result = variant { Ok; Err : text };
 type SavedAccount = record {
   alias : text;
@@ -17,8 +22,10 @@ type SavedAccount = record {
 };
 type ToolCall = record { id : text; function : FunctionCall };
 type ToolCallArgument = record { value : text; name : text };
+type TransformArgs = record { context : blob; response : HttpResponse };
 service : {
   copilot_chat : (vec ChatMessage) -> (text);
   list_accounts : () -> (vec SavedAccount) query;
   save_account : (text, text, opt blob) -> (Result);
+  transform_json : (TransformArgs) -> (HttpResponse) query;
 }

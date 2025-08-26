@@ -12,11 +12,13 @@ pub struct TokenEntry {
     /// Number of decimal places used by the token.
     pub decimals: u8,
 }
-
+const OLLAMA_URL: &str = "http://127.0.0.1:11434"; // untuk non-wasm/dev
+const OLLAMA_HTTPS_PROXY: &str = "https://your-proxy.example.com/api/chat"; // <-- pakai ini di wasm
+const OLLAMA_MODEL: &str = "deepseek-r1:8b";
 /// Tokens permitted for transfers.
 pub const TOKENS: &[TokenEntry] = &[
     TokenEntry { symbol: "ICP",  ledger: "<LEDGER_ICP_ID>",      decimals: 8 },
-    TokenEntry { symbol: "CFXN", ledger: "mxzaz-hqaaa-aaaar-qaada-cai",     decimals: 0 },
+    TokenEntry { symbol: "CFX", ledger: "umunu-kh777-77774-qaaca-cai",     decimals: 0 },
 ];
 
 /// Stored reference to a user account alias.
@@ -74,3 +76,43 @@ pub struct TransferPlan {
     pub checksum: String,
 }
 
+#[derive(Serialize, Clone)]
+struct OllamaMsg {
+    role: String,                 // system|user|assistant|tool
+    content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,         // untuk role=tool
+}
+
+#[derive(Serialize)]
+struct OllamaChatReq {
+    model: String,
+    messages: Vec<OllamaMsg>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tools: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    options: Option<Value>,
+}
+
+#[derive(Deserialize, Clone)]
+struct OllamaFunction { name: String, arguments: Value }
+
+#[derive(Deserialize, Clone)]
+struct OllamaToolCall {
+    #[serde(default)] id: Option<String>,
+    #[serde(default, rename="type")] kind: Option<String>,
+    function: OllamaFunction,
+}
+
+#[derive(Deserialize)]
+struct OllamaMessageResp {
+    role: String,
+    content: String,
+    #[serde(default)]
+    tool_calls: Vec<OllamaToolCall>,
+}
+
+#[derive(Deserialize)]
+struct OllamaChatResp {
+    message: OllamaMessageResp,
+}

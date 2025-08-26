@@ -24,6 +24,8 @@ hex = "0.4"
 # Number types
 num-traits = "0.2" 
 num-bigint = "0.4"
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json","rustls-tls"] }
 
 [dev-dependencies]
 pocket-ic = "9.0.2"
