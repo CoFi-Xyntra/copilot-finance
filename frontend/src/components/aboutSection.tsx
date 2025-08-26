@@ -8,8 +8,8 @@ export const AboutSection: React.FC = () => {
       role: 'Product Manager',
       bio: 'Strategic product leader with expertise in fintech and DeFi. Drives product vision and roadmap development, ensuring user-centric design and market fit.',
       image: '/api/placeholder/200/200', // Placeholder - replace with actual images
-      linkedin: '#',
-      twitter: '#',
+      linkedin: 'https://www.linkedin.com/in/christian-jauhari-1b723122a/',
+      github: 'https://github.com/blackhespy',
       specialties: ['Product Strategy', 'Market Research', 'User Experience']
     },
     {
@@ -18,18 +18,18 @@ export const AboutSection: React.FC = () => {
       role: 'Full-Stack Developer',
       bio: 'Experienced full-stack developer specializing in modern web technologies and blockchain integration. Expert in building scalable applications with React, Node.js, and Web3.',
       image: '/api/placeholder/200/200',
-      linkedin: '#',
-      twitter: '#',
+      linkedin: 'https://www.linkedin.com/in/abdul-rozaq/',
+      github: 'https://github.com/rozaqabdul656',
       specialties: ['React/TypeScript', 'Node.js', 'Web3 Integration']
     },
     {
       id: 'tech-writer-qa',
-      name: 'Gerald',
+      name: 'Gerald Eberhard',
       role: 'Tech Writer and QA',
       bio: 'Technical documentation specialist and quality assurance expert. Ensures code quality, comprehensive testing, and clear documentation for optimal user experience.',
       image: '/api/placeholder/200/200',
-      linkedin: '#',
-      twitter: '#',
+      linkedin: 'https://www.linkedin.com/in/gerald-eberhard-660910299/',
+      github: 'https://github.com/Hi-Gerald',
       specialties: ['Technical Writing', 'Quality Assurance', 'Documentation']
     },
     {
@@ -38,8 +38,8 @@ export const AboutSection: React.FC = () => {
       role: 'Blockchain Developer',
       bio: 'Blockchain architect with deep expertise in smart contract development and DeFi protocols. Specializes in Internet Computer and cross-chain solutions.',
       image: '/api/placeholder/200/200',
-      linkedin: '#',
-      twitter: '#',
+      linkedin: 'https://www.linkedin.com/in/srllamadev/',
+      Github: 'https://github.com/srllamadev',
       specialties: ['Smart Contracts', 'Internet Computer', 'DeFi Protocols']
     },
     {
@@ -48,8 +48,8 @@ export const AboutSection: React.FC = () => {
       role: 'Frontend Developer',
       bio: 'Frontend specialist focused on creating intuitive and responsive user interfaces. Expert in modern frontend technologies and user experience optimization.',
       image: '/api/placeholder/200/200',
-      linkedin: '#',
-      twitter: '#',
+      linkedin: 'https://www.linkedin.com/in/omar-quispe-vargas-7b5601204',
+      Github: 'https://github.com/OmarQV',
       specialties: ['Frontend Development', 'UI/UX Design', 'Responsive Design']
     }
   ];
@@ -169,11 +169,15 @@ export const AboutSection: React.FC = () => {
                     </svg>
                   </a>
                   <a
-                    href={member.twitter}
+                    href={member.github}
                     className="w-10 h-10 bg-sky-600/20 hover:bg-sky-600/40 rounded-lg flex items-center justify-center transition-colors"
                   >
                     <svg className="w-5 h-5 text-sky-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                      <path
+                        fillRule="evenodd"
+                        d="M12 2C6.477 2 2 6.484 2 12.017c0 4.418 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.368-1.34-3.368-1.34-.454-1.158-1.11-1.465-1.11-1.465-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.529 2.341 1.085 2.91.821.092-.63.359-1.085.654-1.336-2.22-.253-4.555-1.11-4.555-4.942 0-1.093.39-1.988 1.029-2.681-.103-.253-.446-1.278.098-2.651 0 0 .84-.268 2.75 1.022A9.613 9.613 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.29 2.747-1.022 2.747-1.022.546 1.373.202 2.398.1 2.651.64.693 1.029 1.587 1.029 2.681 0 3.841-2.339 4.681-4.566 4.935.359.309.678.92.678 1.855 0 1.336-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </a>
                 </div>
@@ -189,10 +193,11 @@ export const AboutSection: React.FC = () => {
         <div className="text-center">
           <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-2xl p-8 border border-purple-500/20">
             <h3 className="text-2xl font-bold text-white mb-4">Join Our Mission</h3>
-            <p className="text-gray-300 mb-6">We're always looking for talented individuals to join our team</p>
-            <button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105">
-              View Open Positions 💼
-            </button>
+            <a href="https://youtu.be/1H9N9YJLtoM" target="_blank" rel="noopener noreferrer">
+              <button className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors">
+                CoFi Xyntra
+              </button>
+            </a>
           </div>
         </div>
       </div>
