@@ -24,6 +24,15 @@ export const idlFactory = ({ IDL }) => {
     'subaccount' : IDL.Opt(IDL.Vec(IDL.Nat8)),
   });
   const Result = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
+  const HttpResponse = IDL.Record({
+    'status' : IDL.Nat,
+    'body' : IDL.Vec(IDL.Nat8),
+    'headers' : IDL.Vec(ToolCallArgument),
+  });
+  const TransformArgs = IDL.Record({
+    'context' : IDL.Vec(IDL.Nat8),
+    'response' : HttpResponse,
+  });
   return IDL.Service({
     'copilot_chat' : IDL.Func([IDL.Vec(ChatMessage)], [IDL.Text], []),
     'list_accounts' : IDL.Func([], [IDL.Vec(SavedAccount)], ['query']),
@@ -32,6 +41,7 @@ export const idlFactory = ({ IDL }) => {
         [Result],
         [],
       ),
+    'transform_json' : IDL.Func([TransformArgs], [HttpResponse], ['query']),
   });
 };
 export const init = ({ IDL }) => { return []; };
