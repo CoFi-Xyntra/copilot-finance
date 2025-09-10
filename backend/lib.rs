@@ -604,6 +604,7 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Value) -> Result<Olla
         model: OLLAMA_MODEL.to_string(),
         messages,
         tools: Some(tools),
+        stream: false,
         options: Some(json!({ "temperature": 0.1 })),
     };
     let client = reqwest::Client::new();
