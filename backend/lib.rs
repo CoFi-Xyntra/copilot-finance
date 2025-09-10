@@ -598,23 +598,23 @@ fn cap_ollama_msgs_in_place(conv: &mut Vec<OllamaMsg>) {
 
 // ============ 1x panggilan /api/chat ke Ollama ============
 // non-wasm (dev/off-chain): pakai reqwest
-// #[cfg(not(target_arch = "wasm32"))]
-// async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Value) -> Result<OllamaChatResp, String> {
-//     let body = OllamaChatReq {
-//         model: OLLAMA_MODEL.to_string(),
-//         messages,
-//         tools: Some(tools),
-//         options: Some(json!({ "temperature": 0.1 })),
-//     };
-//     let client = reqwest::Client::new();
-//     let res = client.post(format!("{}/api/chat", OLLAMA_URL))
-//         .json(&body)
-//         .send().await.map_err(|e| e.to_string())?;
-//     if !res.status().is_success() {
-//         return Err(format!("ollama http status {}", res.status()));
-//     }
-//     res.json::<OllamaChatResp>().await.map_err(|e| e.to_string())
-// }
+#[cfg(not(target_arch = "wasm32"))]
+async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Value) -> Result<OllamaChatResp, String> {
+    let body = OllamaChatReq {
+        model: OLLAMA_MODEL.to_string(),
+        messages,
+        tools: Some(tools),
+        options: Some(json!({ "temperature": 0.1 })),
+    };
+    let client = reqwest::Client::new();
+    let res = client.post(format!("{}/api/chat", OLLAMA_URL))
+        .json(&body)
+        .send().await.map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("ollama http status {}", res.status()));
+    }
+    res.json::<OllamaChatResp>().await.map_err(|e| e.to_string())
+}
 
 #[cfg(target_arch = "wasm32")]
 async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Result<OllamaChatResp, String> {
