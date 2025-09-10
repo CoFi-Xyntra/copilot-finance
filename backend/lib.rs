@@ -14,15 +14,18 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
 use ic_cdk::println;
 
+pub mod prompt;   
+pub use prompt::prompt::{SYSTEM_PROMPT_SWAP, SYSTEM_PROMPT_TRANSFER};
 macro_rules! log {
     ($($arg:tt)*) => { println!($($arg)*); }
 }
 
 // =================== OLLAMA CONFIG ===================
 const OLLAMA_URL: &str = "http://127.0.0.1:11434";                 // non-wasm/dev
-const OLLAMA_HTTPS_PROXY: &str = "https://dbbf38fb41d1.ngrok-free.app/api/chat"; // wasm/prod (HARUS HTTPS)
-const OLLAMA_MODEL: &str = "deepseek-r1:8b";
-const MODEL_SUPPORTS_TOOLS: bool = false; // DeepSeek R1: tools TIDAK didukung
+const OLLAMA_HTTPS_PROXY: &str = "http://127.0.0.1:11434/api/chat"; // wasm/prod (HARUS HTTPS)
+// const OLLAMA_MODEL: &str = "deepseek-r1:8b";
+const OLLAMA_MODEL: &str = "llama3.1:8b";
+const MODEL_SUPPORTS_TOOLS: bool = true; // DeepSeek R1: tools TIDAK didukung
 
 const TOOL_TAG_OPEN: &str = "<tool>";
 const TOOL_TAG_CLOSE: &str = "</tool>";
@@ -74,7 +77,6 @@ AMOUNT
 - If a tool returns BadAmount with an example, use that example next time.
 
 TOOL CALLING (STRICT)
-- Never narrate tool calls or print example JSON. When ready, CALL the tool via tool_calls.
 - Call plan_transfer once recipient & amount are known. Params: to, amount_dec, memo (optional). symbol/ledger/decimals optional (backend overrides).
 - After plan_transfer: show one-line summary (human_readable) and ask explicit confirmation (“confirm” / “lanjut” / “ya”).
 - On confirmation: CALL confirm_transfer. If plan object is missing, you may call with only checksum OR with no parameters; backend uses the last plan.
@@ -95,7 +97,6 @@ THINKING
 OUTPUT RULES
 - Do NOT output JSON or code fences (```).
 - User-facing replies must be brief plain sentences only (no lists unless asked).
-- The ONLY time you output a special tag is to call a tool: <tool>{"name":"...","arguments":{...}}</tool>
 - After a tool result (role=tool), summarize in ONE short sentence; never show raw JSON.
 
 "#;
@@ -103,9 +104,7 @@ fn tool_proxy_instructions() -> &'static str {
     r#"
 TOOL CALLING (NO NATIVE TOOLS)
 - When you need to call a tool, output EXACTLY ONE LINE:
-  <tool>{"name":"<tool_name>","arguments":{...}}</tool>
 - No extra text before or after the tag. Arguments must be valid JSON.
-- After receiving a tool result (role=tool), reply with ONE short plain sentence (no JSON, no code fences).
 - Tools available: plan_transfer, confirm_transfer, save_account, list_accounts.
     "#
 }
@@ -506,7 +505,7 @@ struct OllamaChatResp {
 }
 
 // ============ Tools ke format Ollama ============
-fn build_ollama_tools() -> Value {
+fn build_ollama_tools_transfer() -> Value {
     json!([
       { "type": "function", "function": {
         "name": "plan_transfer",
@@ -731,15 +730,15 @@ fn transform_json(args: ic_cdk::api::management_canister::http_request::Transfor
 // ============ CHAT ENTRYPOINT ============
 #[update]
 pub async fn copilot_chat(messages: Vec<ChatMessage>) -> String {
-    // let tools = build_ollama_tools();
-    let tools_opt = if MODEL_SUPPORTS_TOOLS { Some(build_ollama_tools()) } else { None };
+
+    let tools_opt = if MODEL_SUPPORTS_TOOLS { Some(build_ollama_tools_transfer()) } else { None };
 
     // language guard
     let lang = detect_lang_last_user(&messages);
     let lang_guard = lang_guard_system(lang);
 
     // rakit percakapan awal Ollama
-    let mut conv = initial_ollama_msgs(SYSTEM_PROMPT, &lang_guard, &messages);
+    let mut conv = initial_ollama_msgs(SYSTEM_PROMPT_SWAP, &lang_guard, &messages);
 
     let mut rounds = 0usize;
     let mut final_text = String::new();
@@ -766,6 +765,7 @@ pub async fn copilot_chat(messages: Vec<ChatMessage>) -> String {
             for tc in resp.message.tool_calls.iter() {
                 let name = tc.function.name.as_str();
                 let args_json = tc.function.arguments.clone();
+                log!("[call tools] args={}", args_json);
                 let (_id, result_json) = handle_tool_call_ollama(name, args_json).await;
                 conv.push(OllamaMsg { role: "tool".into(), name: Some(name.to_string()), content: result_json });
             }
