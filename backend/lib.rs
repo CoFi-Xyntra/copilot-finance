@@ -599,7 +599,7 @@ fn cap_ollama_msgs_in_place(conv: &mut Vec<OllamaMsg>) {
 // ============ 1x panggilan /api/chat ke Ollama ============
 // non-wasm (dev/off-chain): pakai reqwest
 #[cfg(not(target_arch = "wasm32"))]
-async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Value) -> Result<OllamaChatResp, String> {
+async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Result<OllamaChatResp, String> {
     let body = OllamaChatReq {
         think: false,
         model: OLLAMA_MODEL.to_string(),
