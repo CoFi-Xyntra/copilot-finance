@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { backend } from '../../src/declarations/backend';
+import { backend } from 'declarations/backend';
 import ChatWindow from './components/chatWindow';
 import LandingPage from './components/landingPage';
 import '/index.css';

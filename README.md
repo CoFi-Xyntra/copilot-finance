@@ -31,3 +31,110 @@ All through a natural language interface.
 - 🧱 **Modular Architecture** – Easy to extend with new DeFi protocols  
 
 ---
+
+# Development Setup
+
+## Local Installation
+
+1. Install dependencies:
+```bash
+npm install
+# or
+yarn instal l
+# or
+pnpm install
+```
+
+2. Run the development server:
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+```
+
+3. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Hot Reload
+The development server includes hot reload, so your changes will be reflected immediately in the browser.
+
+# Local Deployment Guide
+
+## Prerequisites
+- Docker
+- Docker Compose
+
+## Steps to Deploy
+
+1. Clone the repository
+```bash
+git clone https://github.com/your-username/copilot-finance.git
+cd copilot-finance
+```
+
+2. Start the application
+```bash
+docker-compose up -d
+```
+
+3. Access the application at `http://localhost:3000`
+
+## Stopping the Application
+```bash
+docker-compose down
+```
+
+<!-- New: Frontend local instructions -->
+## Frontend — Ejecutar en local (recomendado para desarrollo)
+
+1. Ir al directorio del proyecto:
+```bash
+cd /home/yamil/proyH/copilot-finance
+```
+
+2. (Opcional) Asegúrate de usar una versión de Node >= 16/18. Recomendado usar nvm:
+```bash
+nvm install 18
+nvm use 18
+```
+
+3. Instalar dependencias:
+```bash
+npm ci        # instalación reproducible (usa package-lock.json)
+# o
+npm install   # si no tienes package-lock.json o prefieres instalar normalmente
+# alternativas:
+# yarn install
+# pnpm install
+```
+
+4. Crear el archivo de entorno si existe uno de ejemplo:
+```bash
+cp .env.example .env || true
+# Edita .env según sea necesario
+```
+
+5. Iniciar el servidor de desarrollo (hot reload):
+```bash
+npm run dev
+# o
+yarn dev
+# o
+pnpm dev
+```
+
+6. Abrir en el navegador:
+http://localhost:3000
+
+Opcional — Con Docker (si prefieres contenerizar):
+```bash
+docker-compose up --build
+# detén con:
+docker-compose down
+```
+
+Problemas comunes:
+- Puerto ocupado: cambia el puerto en la variable de entorno (PORT) o cierra la otra app.
+- Errores de dependencias nativas: instala build-essential / python si usas módulos nativos.
+- Si no se inician los scripts, revisa package.json para los scripts disponibles.
