@@ -601,6 +601,7 @@ fn cap_ollama_msgs_in_place(conv: &mut Vec<OllamaMsg>) {
 #[cfg(not(target_arch = "wasm32"))]
 async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Value) -> Result<OllamaChatResp, String> {
     let body = OllamaChatReq {
+        think: false,
         model: OLLAMA_MODEL.to_string(),
         messages,
         tools: Some(tools),
