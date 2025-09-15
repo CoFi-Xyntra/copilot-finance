@@ -23,7 +23,7 @@ const OLLAMA_URL: &str = "http://127.0.0.1:11434";                 // non-wasm/d
 const OLLAMA_HTTPS_PROXY: &str = "https://api.deepseek.com/v1/chat/completions"; // DeepSeek API oficial
 const OLLAMA_MODEL: &str = "deepseek-reasoner";                    // Modelo de DeepSeek API
 const MODEL_SUPPORTS_TOOLS: bool = true;                           // DeepSeek API soporta tools
-const DEEPSEEK_API_KEY: &str = "REPLACE_WITH_ENV_VARIABLE";         // TODO: Leer desde variable de entorno
+const DEEPSEEK_API_KEY: &str = env!("DEEPSEEK_API_KEY");           // Leída desde variable de entorno
 
 const TOOL_TAG_OPEN: &str = "<tool>";
 const TOOL_TAG_CLOSE: &str = "</tool>";
