@@ -18,15 +18,54 @@ macro_rules! log {
     ($($arg:tt)*) => { println!($($arg)*); }
 }
 
-// =================== DEEPSEEK API CONFIG ===================
-const OLLAMA_URL: &str = "http://127.0.0.1:11434";                 // non-wasm/dev (fallback)
-const OLLAMA_HTTPS_PROXY: &str = "https://api.deepseek.com/v1/chat/completions"; // DeepSeek API oficial
-const OLLAMA_MODEL: &str = "deepseek-reasoner";                    // Modelo de DeepSeek API
-const MODEL_SUPPORTS_TOOLS: bool = true;                           // DeepSeek API soporta tools
-const DEEPSEEK_API_KEY: &str = env!("DEEPSEEK_API_KEY");           // Leída desde variable de entorno
+// =================== AI API CONFIG ===================
+const OLLAMA_URL: &str = "http://127.0.0.1:11434";                     // non-wasm/dev (fallback)
+const DEEPSEEK_API_URL: &str = "https://api.deepseek.com/v1/chat/completions"; 
+const OPENROUTER_API_URL: &str = "https://openrouter.ai/api/v1/chat/completions";
+
+// API Provider Selection (change this to switch providers)
+const USE_PROVIDER: &str = "openrouter"; // Options: "deepseek", "openrouter", "ollama"
+
+const DEEPSEEK_MODEL: &str = "deepseek-reasoner";
+const OPENROUTER_MODEL: &str = "deepseek/deepseek-r1"; // or any model from OpenRouter
+
+const MODEL_SUPPORTS_TOOLS: bool = true;                               // Both APIs support tools
+const DEEPSEEK_API_KEY: &str = env!("DEEPSEEK_API_KEY");               // Leída desde variable de entorno
+const OPENROUTER_API_KEY: &str = env!("OPENROUTER_API_KEY");           // Leída desde variable de entorno
 
 const TOOL_TAG_OPEN: &str = "<tool>";
 const TOOL_TAG_CLOSE: &str = "</tool>";
+
+// ============ AI PROVIDER CONFIGURATION ============
+struct ApiConfig {
+    url: &'static str,
+    model: &'static str,
+    api_key: &'static str,
+    provider_name: &'static str,
+}
+
+fn get_api_config() -> ApiConfig {
+    match USE_PROVIDER {
+        "deepseek" => ApiConfig {
+            url: DEEPSEEK_API_URL,
+            model: DEEPSEEK_MODEL,
+            api_key: DEEPSEEK_API_KEY,
+            provider_name: "DeepSeek",
+        },
+        "openrouter" => ApiConfig {
+            url: OPENROUTER_API_URL,
+            model: OPENROUTER_MODEL,
+            api_key: OPENROUTER_API_KEY,
+            provider_name: "OpenRouter",
+        },
+        _ => ApiConfig {
+            url: DEEPSEEK_API_URL,
+            model: DEEPSEEK_MODEL,
+            api_key: DEEPSEEK_API_KEY,
+            provider_name: "DeepSeek",
+        },
+    }
+}
 // ===================== ALLOWLIST TOKEN =====================
 #[derive(Clone, Debug)]
 struct TokenEntry { symbol: &'static str, ledger: &'static str, decimals: u8 }
@@ -651,13 +690,16 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
         ic_cdk::println!("[ollama] request messages:\n{pretty}");
     }
 
+    // Get API configuration based on selected provider
+    let api_config = get_api_config();
+    
     // 3) Encode ke bytes dan log info ukuran
     let body = serde_json::to_vec(&messages).map_err(|e| e.to_string())?;
-    ic_cdk::println!("[deepseek] body_len={} bytes", body.len());
+    ic_cdk::println!("[{}] body_len={} bytes", api_config.provider_name, body.len());
     // println!("messages{:?}", messages);
     // Batasi panjang output model supaya respons kecil
     let body = serde_json::to_vec(&OllamaChatReq {
-        model: OLLAMA_MODEL.to_string(),
+        model: api_config.model.to_string(),
         messages,
         tools,
         options: Some(serde_json::json!({
@@ -674,7 +716,7 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
 
     // Try #1: kirim cycles "aman"
     let mut req = CanisterHttpRequestArgument {
-        url: OLLAMA_HTTPS_PROXY.to_string(), // DeepSeek API endpoint
+        url: api_config.url.to_string(), // Dynamic API endpoint
         method: HttpMethod::POST,
         body: Some(body),
         max_response_bytes: Some(max_resp),
@@ -682,7 +724,7 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
         headers: vec![
             HttpHeader { name: "Content-Type".into(), value: "application/json".into() },
             HttpHeader { name: "Accept".into(),       value: "application/json".into() },
-            HttpHeader { name: "Authorization".into(), value: format!("Bearer {}", DEEPSEEK_API_KEY) },
+            HttpHeader { name: "Authorization".into(), value: format!("Bearer {}", api_config.api_key) },
         ],
     };
 
@@ -690,9 +732,9 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
 
     match http_request(req.clone(), cycles).await {
         Ok((resp,)) => {
-             ic_cdk::println!("[deepseek] status={} resp_len={}", resp.status, resp.body.len());
+             ic_cdk::println!("[{}] status={} resp_len={}", api_config.provider_name, resp.status, resp.body.len());
             let preview = String::from_utf8_lossy(&resp.body);
-            ic_cdk::println!("[deepseek] resp preview:\n{}", &preview.chars().take(800).collect::<String>());
+            ic_cdk::println!("[{}] resp preview:\n{}", api_config.provider_name, &preview.chars().take(800).collect::<String>());
             let bytes = resp.body; // Vec<u8>
 
 
@@ -705,7 +747,7 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
                 cycles = needed.saturating_add(1_000_000_000);
                 match http_request(req, cycles).await {
                     Ok((resp2,)) => {
-                        ic_cdk::println!("[deepseek] status={} resp_len={}", resp2.status, resp2.body.len());
+                        ic_cdk::println!("[{}] status={} resp_len={}", api_config.provider_name, resp2.status, resp2.body.len());
                         let bytes = resp2.body;
                         // let preview = String::from_utf8_lossy(&resp.body);
                         // ic_cdk::println!("[ollama] resp preview:\n{}", &preview.chars().take(800).collect::<String>());
