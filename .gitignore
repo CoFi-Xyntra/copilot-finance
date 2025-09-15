@@ -4,3 +4,11 @@ node_modules
 target
 frontend/node_modules
 frontend/dist
+
+# Environment variables - NEVER commit these!
+.env
+frontend/.env
+*.env
+.env.local
+.env.production
+.env.development

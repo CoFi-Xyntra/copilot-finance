@@ -18,11 +18,12 @@ macro_rules! log {
     ($($arg:tt)*) => { println!($($arg)*); }
 }
 
-// =================== OLLAMA CONFIG ===================
-const OLLAMA_URL: &str = "http://127.0.0.1:11434";                 // non-wasm/dev
-const OLLAMA_HTTPS_PROXY: &str = "https://dbbf38fb41d1.ngrok-free.app/api/chat"; // wasm/prod (HARUS HTTPS)
-const OLLAMA_MODEL: &str = "deepseek-r1:8b";
-const MODEL_SUPPORTS_TOOLS: bool = false; // DeepSeek R1: tools TIDAK didukung
+// =================== DEEPSEEK API CONFIG ===================
+const OLLAMA_URL: &str = "http://127.0.0.1:11434";                 // non-wasm/dev (fallback)
+const OLLAMA_HTTPS_PROXY: &str = "https://api.deepseek.com/v1/chat/completions"; // DeepSeek API oficial
+const OLLAMA_MODEL: &str = "deepseek-reasoner";                    // Modelo de DeepSeek API
+const MODEL_SUPPORTS_TOOLS: bool = true;                           // DeepSeek API soporta tools
+const DEEPSEEK_API_KEY: &str = "REPLACE_WITH_ENV_VARIABLE";         // TODO: Leer desde variable de entorno
 
 const TOOL_TAG_OPEN: &str = "<tool>";
 const TOOL_TAG_CLOSE: &str = "</tool>";
@@ -502,6 +503,30 @@ struct OllamaMessageResp {
 
 #[derive(Deserialize)]
 struct OllamaChatResp {
+    #[serde(default)]
+    message: Option<OllamaMessageResp>,  // Ollama format
+    #[serde(default)]
+    choices: Option<Vec<DeepSeekChoice>>, // DeepSeek/OpenAI format
+}
+
+impl OllamaChatResp {
+    fn get_message(&self) -> Option<&OllamaMessageResp> {
+        // Try Ollama format first
+        if let Some(ref msg) = self.message {
+            return Some(msg);
+        }
+        // Try DeepSeek/OpenAI format
+        if let Some(ref choices) = self.choices {
+            if let Some(choice) = choices.first() {
+                return Some(&choice.message);
+            }
+        }
+        None
+    }
+}
+
+#[derive(Deserialize)]
+struct DeepSeekChoice {
     message: OllamaMessageResp,
 }
 
@@ -628,7 +653,7 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
 
     // 3) Encode ke bytes dan log info ukuran
     let body = serde_json::to_vec(&messages).map_err(|e| e.to_string())?;
-    ic_cdk::println!("[ollama] body_len={} bytes", body.len());
+    ic_cdk::println!("[deepseek] body_len={} bytes", body.len());
     // println!("messages{:?}", messages);
     // Batasi panjang output model supaya respons kecil
     let body = serde_json::to_vec(&OllamaChatReq {
@@ -637,7 +662,7 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
         tools,
         options: Some(serde_json::json!({
             "temperature": 0.1,
-            "num_predict": 256
+            "max_tokens": 1000
         })),
          stream: false,
          think: false,
@@ -649,7 +674,7 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
 
     // Try #1: kirim cycles "aman"
     let mut req = CanisterHttpRequestArgument {
-        url: OLLAMA_HTTPS_PROXY.to_string(), // harus HTTPS (proxy ke Ollama)
+        url: OLLAMA_HTTPS_PROXY.to_string(), // DeepSeek API endpoint
         method: HttpMethod::POST,
         body: Some(body),
         max_response_bytes: Some(max_resp),
@@ -657,6 +682,7 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
         headers: vec![
             HttpHeader { name: "Content-Type".into(), value: "application/json".into() },
             HttpHeader { name: "Accept".into(),       value: "application/json".into() },
+            HttpHeader { name: "Authorization".into(), value: format!("Bearer {}", DEEPSEEK_API_KEY) },
         ],
     };
 
@@ -664,9 +690,9 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
 
     match http_request(req.clone(), cycles).await {
         Ok((resp,)) => {
-             ic_cdk::println!("[ollamas] status={} resp_len={}", resp.status, resp.body.len());
+             ic_cdk::println!("[deepseek] status={} resp_len={}", resp.status, resp.body.len());
             let preview = String::from_utf8_lossy(&resp.body);
-            ic_cdk::println!("[ollama] resp preview:\n{}", &preview.chars().take(800).collect::<String>());
+            ic_cdk::println!("[deepseek] resp preview:\n{}", &preview.chars().take(800).collect::<String>());
             let bytes = resp.body; // Vec<u8>
 
 
@@ -679,7 +705,7 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
                 cycles = needed.saturating_add(1_000_000_000);
                 match http_request(req, cycles).await {
                     Ok((resp2,)) => {
-                        ic_cdk::println!("[ollama] status={} resp_len={}", resp2.status, resp2.body.len());
+                        ic_cdk::println!("[deepseek] status={} resp_len={}", resp2.status, resp2.body.len());
                         let bytes = resp2.body;
                         // let preview = String::from_utf8_lossy(&resp.body);
                         // ic_cdk::println!("[ollama] resp preview:\n{}", &preview.chars().take(800).collect::<String>());
@@ -753,17 +779,23 @@ pub async fn copilot_chat(messages: Vec<ChatMessage>) -> String {
             Err(e) => return format!("Ollama error: {e}"),
         };
 
+        // Extract message from response (works with both Ollama and DeepSeek formats)
+        let message = match resp.get_message() {
+            Some(msg) => msg,
+            None => return "Error: No message in response".to_string(),
+        };
+
         // assistant text
-        if !resp.message.content.is_empty() {
-            final_text = resp.message.content.clone();
+        if !message.content.is_empty() {
+            final_text = message.content.clone();
             conv.push(OllamaMsg { role: "assistant".into(), content: final_text.clone(), name: None });
         }
 
         // tool calls
        // ======== HANDLE TOOL CALLS =========
         if MODEL_SUPPORTS_TOOLS {
-            if resp.message.tool_calls.is_empty() { break; }
-            for tc in resp.message.tool_calls.iter() {
+            if message.tool_calls.is_empty() { break; }
+            for tc in message.tool_calls.iter() {
                 let name = tc.function.name.as_str();
                 let args_json = tc.function.arguments.clone();
                 let (_id, result_json) = handle_tool_call_ollama(name, args_json).await;
