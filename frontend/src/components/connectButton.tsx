@@ -86,122 +86,116 @@ export const ConnectPlugButton: React.FC<Props> = ({ whitelist, host, className,
   }
 
   if (plug.connected) {
+    // Calcular balance total simple
+    const totalBalance = assets.reduce((sum, asset) => {
+      const balance = parseFloat(asset.display.replace(/[^\d.]/g, '')) || 0;
+      return sum + balance;
+    }, 0);
+
     return (
-      <div className={`${className || ""}`}>
-        {/* Estado conectado con diseño futurista */}
+      <div className={`${className || ""} relative`}>
+        {/* Diseño compacto y conciso - expandido horizontalmente pero responsivo */}
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
-          <div className="relative bg-gray-800/80 backdrop-blur-sm border border-emerald-500/30 rounded-2xl p-3 sm:p-4">
-            {/* Header de conexión */}
-            <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
-              <div className="relative dropdown-container flex-1">
-                <button
-                  onClick={() => setShowDropdown(!showDropdown)}
-                  className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 hover:bg-gray-700/30 rounded-lg p-2 transition-colors cursor-pointer group"
-                >
-                  <div className="relative flex-shrink-0">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-full flex items-center justify-center">
-                      <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-900 rounded-full flex items-center justify-center">
-                        <span className="text-emerald-400 text-xs font-bold">P</span>
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+          <div className="relative bg-gray-800/90 backdrop-blur-sm border border-emerald-500/20 rounded-xl p-2 sm:p-4 min-w-[200px] sm:min-w-[220px] md:min-w-[240px] z-40">
+            
+            {/* Header compacto */}
+            <div className="relative dropdown-container">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="w-full hover:bg-gray-700/30 rounded-lg p-2 sm:p-3 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center justify-between">
+                  {/* Status y Red */}
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-full flex items-center justify-center">
+                        <span className="text-gray-900 text-xs sm:text-sm font-bold">P</span>
                       </div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full animate-pulse"></div>
                     </div>
-                    <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full border-2 border-gray-800 animate-pulse"></div>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-emerald-400 font-semibold text-xs sm:text-sm flex items-center gap-2">
-                      Connected Wallet
-                      <svg className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${showDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                    <div className="text-gray-400 text-xs font-mono truncate">{short(plug.principal)}</div>
-                  </div>
-                </button>
-
-                {/* Dropdown Menu */}
-                {showDropdown && (
-                  <div className="absolute left-0 top-full mt-2 w-full min-w-[200px] bg-gray-800/95 backdrop-blur-sm border border-gray-600/50 rounded-xl shadow-xl z-50 overflow-hidden">
-                    <div className="py-1">
-                      {/* Copy Address */}
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(plug.principal || '');
-                          setShowDropdown(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 hover:text-white transition-colors flex items-center gap-3"
-                      >
-                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        Copy Address
-                      </button>
-
-                      {/* View on Explorer */}
-                      <button
-                        onClick={() => {
-                          window.open(`https://dashboard.internetcomputer.org/account/${plug.principal}`, '_blank');
-                          setShowDropdown(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700/50 hover:text-white transition-colors flex items-center gap-3"
-                      >
-                        <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                        View on Explorer
-                      </button>
-
-                      {/* Separator */}
-                      <div className="border-t border-gray-600/50 my-1"></div>
-
-                      {/* Disconnect */}
-                      <button
-                        onClick={() => {
-                          plug.disconnect();
-                          setShowDropdown(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors flex items-center gap-3"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        Disconnect Wallet
-                      </button>
+                    <div className="text-left">
+                      <div className="text-emerald-400 text-xs sm:text-sm font-medium">Connected</div>
+                      <div className="text-gray-400 text-xs">IC Network</div>
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
 
-            {/* Assets display mejorado */}
-            {assets.length > 0 && (
-              <div className="border-t border-gray-700/50 pt-3 sm:pt-4">
-                <div className="text-gray-300 text-xs sm:text-sm font-medium mb-2 sm:mb-3 flex items-center gap-2">
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  {/* Dropdown arrow */}
+                  <svg className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-400 transition-transform ${showDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                  <span className="hidden sm:inline">Your Assets</span>
-                  <span className="sm:hidden">Assets</span>
                 </div>
-                <div className="space-y-1.5 sm:space-y-2 max-h-40 sm:max-h-48 overflow-y-auto">
-                  {assets.map(asset => (
-                    <div key={asset.canisterId} className="bg-gray-700/30 rounded-lg sm:rounded-xl p-2 sm:p-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-xs font-bold">{(asset.label || asset.symbol || 'T')[0]}</span>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-white font-medium text-xs sm:text-sm truncate">{asset.label || asset.symbol}</div>
-                          <div className="text-gray-400 text-xs truncate">{asset.canisterId.slice(0, 8)}...</div>
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="text-teal-400 font-bold text-xs sm:text-sm">{asset.display}</div>
+                
+                {/* Address y Balance */}
+                <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-700/50">
+                  <div className="flex items-center justify-between">
+                    <div className="text-left flex-1 min-w-0">
+                      <div className="text-gray-300 text-xs sm:text-sm font-medium">Address</div>
+                      <div className="text-gray-400 text-xs sm:text-sm font-mono truncate">{short(plug.principal)}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-gray-300 text-xs sm:text-sm font-medium">Balance</div>
+                      <div className="text-teal-400 text-sm sm:text-lg font-semibold">
+                        {totalBalance > 0 ? `${totalBalance.toFixed(2)}` : '0.00'}
+                        <span className="text-gray-400 text-xs sm:text-sm ml-1">tokens</span>
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              </button>
+
+              {/* Dropdown Menu con z-index muy alto */}
+              {showDropdown && (
+                <div className="absolute left-0 top-full mt-2 w-full bg-gray-800/95 backdrop-blur-sm border border-gray-600/50 rounded-xl shadow-2xl z-[9999] overflow-hidden">
+                  <div className="py-1">
+                    {/* Copy Address */}
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(plug.principal || '');
+                        setShowDropdown(false);
+                      }}
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm text-gray-300 hover:bg-gray-700/50 hover:text-white transition-colors flex items-center gap-2 sm:gap-3"
+                    >
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Copy Address
+                    </button>
+
+                    {/* View on Explorer */}
+                    <button
+                      onClick={() => {
+                        window.open(`https://dashboard.internetcomputer.org/account/${plug.principal}`, '_blank');
+                        setShowDropdown(false);
+                      }}
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm text-gray-300 hover:bg-gray-700/50 hover:text-white transition-colors flex items-center gap-2 sm:gap-3"
+                    >
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      View Explorer
+                    </button>
+
+                    {/* Separator */}
+                    <div className="border-t border-gray-600/50 my-1"></div>
+
+                    {/* Disconnect */}
+                    <button
+                      onClick={() => {
+                        plug.disconnect();
+                        setShowDropdown(false);
+                      }}
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors flex items-center gap-2 sm:gap-3"
+                    >
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      Disconnect Wallet
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

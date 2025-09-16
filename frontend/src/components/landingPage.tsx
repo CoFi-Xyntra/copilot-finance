@@ -7,6 +7,7 @@ import { DocumentationSection } from './documentationSection';
 
 interface LandingPageProps {
   onEnterApp: () => void;
+  onEnterLegacyChat?: () => void;
 }
 
 // Animated Background Component - FLUID & ELEGANT VERSION
@@ -130,71 +131,20 @@ const AnimatedBackground = () => {
   );
 };
 
-// Bitcoin Price Ticker Animation
-const BTCTicker = () => {
-  const [price, setPrice] = useState(67890);
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPrice(prev => prev + (Math.random() - 0.5) * 100);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
+// Logo principal simplificado
+const SimpleLogo = () => {
   return (
-    <div className="absolute top-8 right-8 bg-gray-800/50 backdrop-blur-sm border border-orange-500/30 rounded-xl p-3 text-center">
-      <div className="flex items-center gap-2 text-orange-400">
-        <span className="text-lg font-bold">₿</span>
-        <div>
-          <div className="text-xs text-gray-400">BTC/USD</div>
-          <div className="font-mono text-sm">${price.toFixed(0)}</div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// AI Status Indicator
-const AIStatusIndicator = () => {
-  return (
-    <div className="absolute top-8 left-8 bg-gray-800/50 backdrop-blur-sm border border-blue-500/30 rounded-xl p-3">
-      <div className="flex items-center gap-2">
-        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-        <span className="text-sm text-blue-400">🤖 AI Online</span>
-      </div>
-    </div>
-  );
-};
-
-// Logo creado con CSS
-const AILogo = () => {
-  return (
-    <div className="relative group mb-8">
-      <div className="flex items-center justify-center">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 animate-ping"></div>
-        </div>
-        <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
-          <div className="w-24 h-24 rounded-full bg-gray-900 flex items-center justify-center relative overflow-hidden">
-            <div className="text-white font-bold text-lg tracking-widest">
-              COFI
-            </div>
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-0 group-hover:opacity-50 group-hover:animate-ping"></div>
-          </div>
-          <div className="absolute inset-0">
-            <div className="absolute top-2 left-1/2 w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
-            <div className="absolute bottom-2 right-4 w-1.5 h-1.5 bg-purple-300 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-            <div className="absolute left-2 top-1/2 w-1 h-1 bg-cyan-300 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
-          </div>
-        </div>
-        {/* AI Brain Icon Animation */}
-      </div>
-      <div className="text-center mt-4">
-        <div className="text-2xl font-light text-gray-300 tracking-[0.5em]">
-          XYNTRA
-        </div>
-        <p className="text-xl text-zinc-300 mt-2 animate-pulse">Your Intelligent DeFi Copilot</p>
-      </div>
+    <div className="flex flex-col items-center mb-12">
+      
+      {/* Título */}
+      <h1 className="text-5xl sm:text-6xl lg:text-8xl font-light text-white tracking-wider leading-tight text-center">
+        COFI XYNTRA
+      </h1>
+      
+      {/* Subtítulo */}
+      <p className="text-xl sm:text-2xl lg:text-3xl text-gray-300 font-light text-center mt-4">
+        Your Intelligent DeFi Copilot
+      </p>
     </div>
   );
 };
@@ -223,7 +173,7 @@ const AnimatedText = () => {
   );
 };
 
-export default function LandingPage({ onEnterApp }: LandingPageProps) {
+export default function LandingPage({ onEnterApp, onEnterLegacyChat }: LandingPageProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [currentText, setCurrentText] = useState(0);
   const [currentSection, setCurrentSection] = useState('home');  const texts = [
@@ -291,59 +241,37 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
       
       {/* Home Section */}
       <section id="home" className="relative">
-        <AnimatedBackground />
-        <BTCTicker />
-        <AIStatusIndicator />
       
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16 relative z-10">
-        <div className="text-center mb-16">
-          {/* Logo con animaciones AI */}
-          <AILogo />
-
-          {/* Main Headline con efecto typing */}
+        <div className="text-center">
+          {/* Logo Principal */}
           <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                        <h1 className="text-6xl md:text-8xl font-light text-white tracking-wider leading-tight">
-              COFI XYNTRA
-            </h1>
-            
-            {/* Subtítulo animado */}
-            <div className="h-16 flex items-center justify-center relative">
-              <h2 className="text-2xl md:text-3xl text-gray-300 font-light transition-all duration-500">
-                {texts[currentText]}
-              </h2>
-              {/* AI Processing Dots */}
-              <div className="absolute -right-4 top-2 flex space-x-1">
-                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-              </div>
-            </div>
+            <SimpleLogo />
             
             <p className="text-lg text-gray-400 max-w-3xl mx-auto leading-relaxed mt-6">
               Experience the future of decentralized finance with the power of artificial intelligence. 
               Manage tokens, verify balances, and interact with DeFi protocols intelligently and securely.
             </p>
-            <br />
           </div>
 
           {/* Connect Wallet Button CENTRADO con efectos mejorados */}
-          <div className="mb-16 relative flex justify-center">
+          <div className="mb-16 relative flex justify-center z-50">
             {/* Glow effect background */}
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur-lg opacity-30 animate-pulse"></div>
             
-            <div className="relative">
+            <div className="relative z-50">
               {/* Animated Background Ring */}
               <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 rounded-xl blur-lg opacity-30 animate-pulse"></div>
               
               <div className="relative inline-block p-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
-                <div className="bg-zinc-900 rounded-lg px-8 py-4">
+                <div className="bg-zinc-900 rounded-lg px-4 sm:px-8 py-3 sm:py-4">
                   <ConnectPlugButton
                     ledgers={[
                       { canisterId: "mxzaz-hqaaa-aaaar-qaada-cai", label: "CFXN" },
                     ]}
                     host="http://127.0.0.1:4943"
-                    className="transform hover:scale-105 transition-all duration-300"
+                    className="transform hover:scale-105 transition-all duration-300 relative z-[9999]"
                   />
                 </div>
               </div>
@@ -403,27 +331,42 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
           </div>
         </div>
 
-        {/* Botón para entrar a la app con animaciones mejoradas */}
+        {/* Botones para entrar a la app con animaciones mejoradas */}
         <div className="text-center relative">
-          <div className="relative inline-block">
-            {/* Animated Background Ring */}
-            <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 rounded-xl blur-lg opacity-30 animate-pulse"></div>
-            
-            <button
-              onClick={onEnterApp}
-              className="relative bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 
-                       text-white font-semibold py-4 px-8 rounded-xl text-lg transition-all duration-300 
-                       transform hover:scale-105 shadow-lg hover:shadow-xl group"
-            >
-              <span className="relative z-10 flex items-center space-x-2">
-                <span>Explore Application</span>
-                <div className="flex space-x-1">
-                  <div className="w-1 h-1 bg-white rounded-full animate-bounce group-hover:animate-ping"></div>
-                  <div className="w-1 h-1 bg-white rounded-full animate-bounce group-hover:animate-ping" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-1 h-1 bg-white rounded-full animate-bounce group-hover:animate-ping" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-              </span>
-            </button>
+          <div className="flex flex-col items-center gap-4">
+            {/* Main App Button */}
+            <div className="relative inline-block">
+              {/* Animated Background Ring */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 rounded-xl blur-lg opacity-30 animate-pulse"></div>
+              
+              <button
+                onClick={onEnterApp}
+                className="relative bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 
+                         text-white font-semibold py-4 px-8 rounded-xl text-lg transition-all duration-300 
+                         transform hover:scale-105 shadow-lg hover:shadow-xl group"
+              >
+                <span className="relative z-10 flex items-center space-x-2">
+                  <span>🚀 Enter New Chat Experience</span>
+                  <div className="flex space-x-1">
+                    <div className="w-1 h-1 bg-white rounded-full animate-bounce group-hover:animate-ping"></div>
+                    <div className="w-1 h-1 bg-white rounded-full animate-bounce group-hover:animate-ping" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-1 h-1 bg-white rounded-full animate-bounce group-hover:animate-ping" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                </span>
+              </button>
+            </div>
+
+            {/* Legacy Chat Button */}
+            {onEnterLegacyChat && (
+              <button
+                onClick={onEnterLegacyChat}
+                className="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white 
+                         font-medium py-2 px-6 rounded-lg text-sm transition-all duration-300 
+                         transform hover:scale-105 border border-gray-600 hover:border-gray-500"
+              >
+                💬 Classic Chat View
+              </button>
+            )}
           </div>
           
           <p className="text-sm text-zinc-400 mt-4 animate-pulse">

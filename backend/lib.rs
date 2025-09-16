@@ -18,11 +18,18 @@ macro_rules! log {
     ($($arg:tt)*) => { println!($($arg)*); }
 }
 
-// =================== OLLAMA CONFIG ===================
-const OLLAMA_URL: &str = "http://127.0.0.1:11434";                 // non-wasm/dev
-const OLLAMA_HTTPS_PROXY: &str = "https://dbbf38fb41d1.ngrok-free.app/api/chat"; // wasm/prod (HARUS HTTPS)
-const OLLAMA_MODEL: &str = "deepseek-r1:8b";
-const MODEL_SUPPORTS_TOOLS: bool = false; // DeepSeek R1: tools TIDAK didukung
+// =================== OPENROUTER API CONFIG ===================
+const OLLAMA_URL: &str = "http://127.0.0.1:11434";                 // non-wasm/dev (no usado)
+const OLLAMA_HTTPS_PROXY: &str = "https://openrouter.ai/api/v1/chat/completions"; // OpenRouter API endpoint
+const OLLAMA_MODEL: &str = "openai/gpt-4o-mini";
+const MODEL_SUPPORTS_TOOLS: bool = true; // OpenRouter con Claude soporta tools
+
+// Función para obtener la API key desde variables de entorno
+fn get_openrouter_api_key() -> String {
+    // En producción, la API key debería venir del deployment
+    // Por ahora usamos un valor por defecto si no está disponible
+    std::env::var("OPENROUTER_API_KEY").unwrap_or_else(|_| "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".to_string())
+}
 
 const TOOL_TAG_OPEN: &str = "<tool>";
 const TOOL_TAG_CLOSE: &str = "</tool>";
@@ -461,13 +468,13 @@ fn lang_guard_system(lang: &str) -> OllamaMsg {
     OllamaMsg { role: "system".into(), content: s.to_string(), name: None }
 }
 
-// ================== OLLAMA SCHEMA (minimal) ==================
+// ================== OPENROUTER API SCHEMA ==================
 #[derive(Serialize, Clone)]
 struct OllamaMsg {
     role: String,                 // system|user|assistant|tool
     content: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    name: Option<String>,         // untuk role=tool
+    name: Option<String>,         // para role=tool
 }
 
 #[derive(Serialize)]
@@ -475,11 +482,10 @@ struct OllamaChatReq {
     model: String,
     messages: Vec<OllamaMsg>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    tools: Option<Value>,
+    max_tokens: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    options: Option<Value>,
+    temperature: Option<f32>,
     stream: bool,
-    think: bool
 }
 
 #[derive(Deserialize, Clone)]
@@ -496,13 +502,16 @@ struct OllamaToolCall {
 struct OllamaMessageResp {
     role: String,
     content: String,
-    #[serde(default)]
-    tool_calls: Vec<OllamaToolCall>,
+}
+
+#[derive(Deserialize)]
+struct OllamaChoice {
+    message: OllamaMessageResp,
 }
 
 #[derive(Deserialize)]
 struct OllamaChatResp {
-    message: OllamaMessageResp,
+    choices: Vec<OllamaChoice>,
 }
 
 // ============ Tools ke format Ollama ============
@@ -618,7 +627,7 @@ fn cap_ollama_msgs_in_place(conv: &mut Vec<OllamaMsg>) {
 // }
 
 #[cfg(target_arch = "wasm32")]
-async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Result<OllamaChatResp, String> {
+async fn ollama_chat_once(messages: Vec<OllamaMsg>, _tools: Option<Value>) -> Result<OllamaChatResp, String> {
     use ic_cdk::api::management_canister::http_request::{
         CanisterHttpRequestArgument, HttpHeader, HttpMethod, TransformContext, http_request,
     };
@@ -627,29 +636,23 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
     }
 
     // 3) Encode ke bytes dan log info ukuran
-    let body = serde_json::to_vec(&messages).map_err(|e| e.to_string())?;
-    ic_cdk::println!("[ollama] body_len={} bytes", body.len());
-    // println!("messages{:?}", messages);
-    // Batasi panjang output model supaya respons kecil
+    // Crear request body para OpenRouter API
     let body = serde_json::to_vec(&OllamaChatReq {
         model: OLLAMA_MODEL.to_string(),
         messages,
-        tools,
-        options: Some(serde_json::json!({
-            "temperature": 0.1,
-            "num_predict": 256
-        })),
-         stream: false,
-         think: false,
+        max_tokens: Some(256),
+        temperature: Some(0.1),
+        stream: false,
     }).map_err(|e| e.to_string())?;
-    //  println!("body{}", serde_json::to_string(&).unwrap());   
-// log!("[plan_transfer] raw_args={:?}", messages);
+    
+    ic_cdk::println!("[openrouter] body_len={} bytes", body.len());
+    
     // KECILKAN limit respons (biaya tergantung angka ini)
-    let max_resp: u64 = 200_000; // 200 KB cukup untuk teks + tool_calls kecil
+    let max_resp: u64 = 200_000; // 200 KB cukup para respuesta
 
-    // Try #1: kirim cycles "aman"
-    let mut req = CanisterHttpRequestArgument {
-        url: OLLAMA_HTTPS_PROXY.to_string(), // harus HTTPS (proxy ke Ollama)
+    // Request con Authorization header para OpenRouter
+    let req = CanisterHttpRequestArgument {
+        url: OLLAMA_HTTPS_PROXY.to_string(), // OpenRouter API endpoint
         method: HttpMethod::POST,
         body: Some(body),
         max_response_bytes: Some(max_resp),
@@ -657,6 +660,7 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
         headers: vec![
             HttpHeader { name: "Content-Type".into(), value: "application/json".into() },
             HttpHeader { name: "Accept".into(),       value: "application/json".into() },
+            HttpHeader { name: "Authorization".into(), value: format!("Bearer {}", get_openrouter_api_key()) },
         ],
     };
 
@@ -750,34 +754,23 @@ pub async fn copilot_chat(messages: Vec<ChatMessage>) -> String {
 
         let resp = match ollama_chat_once(conv.clone(), tools_opt.clone()).await {
             Ok(r) => r,
-            Err(e) => return format!("Ollama error: {e}"),
+            Err(e) => return format!("OpenRouter API error: {e}"),
         };
 
-        // assistant text
-        if !resp.message.content.is_empty() {
-            final_text = resp.message.content.clone();
+        // assistant text - ajustar para la estructura de OpenRouter
+        if !resp.choices.is_empty() && !resp.choices[0].message.content.is_empty() {
+            final_text = resp.choices[0].message.content.clone();
             conv.push(OllamaMsg { role: "assistant".into(), content: final_text.clone(), name: None });
         }
 
-        // tool calls
-       // ======== HANDLE TOOL CALLS =========
-        if MODEL_SUPPORTS_TOOLS {
-            if resp.message.tool_calls.is_empty() { break; }
-            for tc in resp.message.tool_calls.iter() {
-                let name = tc.function.name.as_str();
-                let args_json = tc.function.arguments.clone();
-                let (_id, result_json) = handle_tool_call_ollama(name, args_json).await;
-                conv.push(OllamaMsg { role: "tool".into(), name: Some(name.to_string()), content: result_json });
-            }
+        // tool calls - OpenRouter con Claude soporta tool_calls nativamente
+        if let Some((name, args_json)) = extract_tool_call_from_text(&final_text) {
+            ic_cdk::println!("[proxy tools] detected tool call: {}", name);
+            let (_id, result_json) = handle_tool_call_ollama(&name, args_json).await;
+            conv.push(OllamaMsg { role: "tool".into(), name: Some(name), content: result_json });
         } else {
-            if let Some((name, args_json)) = extract_tool_call_from_text(&final_text) {
-                ic_cdk::println!("[proxy tools] detected tool call: {}", name);
-                let (_id, result_json) = handle_tool_call_ollama(&name, args_json).await;
-                conv.push(OllamaMsg { role: "tool".into(), name: Some(name), content: result_json });
-            } else {
-                // Tidak ada tool-call → selesai
-                break;
-            }
+            // No hay tool-call → terminado
+            break;
         }
 
         cap_ollama_msgs_in_place(&mut conv);
