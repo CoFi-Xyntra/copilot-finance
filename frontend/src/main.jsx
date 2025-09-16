@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { backend } from '../../src/declarations/backend';
 import ChatWindow from './components/chatWindow';
 import LandingPage from './components/landingPage';
+import MainLayout from './components/mainLayout';
 import '/index.css';
 import { client } from "./../config/client";
 import { useProfiles, useActiveAccount, ConnectButton, ThirdwebProvider } from "thirdweb/react";
@@ -25,21 +26,37 @@ export  function WalletConnectComponent() {
 
   return <ConnectButton client={client} />;
 }
- function App() {
-  const [showLanding, setShowLanding] = useState(true);
+
+function App() {
+  const [currentView, setCurrentView] = useState('landing'); // 'landing' | 'chat' | 'legacy'
 
   const handleEnterApp = () => {
-    setShowLanding(false);
+    setCurrentView('chat');
   };
 
-  if (showLanding) {
-    return <LandingPage onEnterApp={handleEnterApp} />;
+  const handleEnterLegacyChat = () => {
+    setCurrentView('legacy');
+  };
+
+  if (currentView === 'landing') {
+    return <LandingPage onEnterApp={handleEnterApp} onEnterLegacyChat={handleEnterLegacyChat} />;
   }
 
+  if (currentView === 'chat') {
+    return <MainLayout />;
+  }
+
+  // Legacy chat view
   return (
     <div className="flex h-screen dark bg-zinc-900 text-white">
       <ChatWindow />
       <div className="w-64 bg-zinc-800 p-4 flex flex-col">
+        <button
+          onClick={() => setCurrentView('landing')}
+          className="mb-4 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded"
+        >
+          ← Back to Landing
+        </button>
         <ConnectPlugButton
           ledgers={[
             { canisterId: "mxzaz-hqaaa-aaaar-qaada-cai", label: "CFXN" }, // ledger ICRC-1 lokal kamu
