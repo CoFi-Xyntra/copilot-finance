@@ -14,14 +14,20 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
 use ic_cdk::println;
 
-pub mod prompt;   
+pub mod prompt;
+pub mod types;
+pub mod helper;
 pub use prompt::prompt::{SYSTEM_PROMPT_SWAP, SYSTEM_PROMPT_TRANSFER};
+pub use types::{ TOKENS, TokenEntry };
+pub use helper::swap::{icpswap_get_pool, resolve_token_entry};
+
+use crate::types::DEFAULT_POOL_FEE_BPS;
+// pub use 
 macro_rules! log {
     ($($arg:tt)*) => { println!($($arg)*); }
 }
 
 // =================== OLLAMA CONFIG ===================
-// const OLLAMA_URL: &str = "http://127.0.0.1:11434";                 // non-wasm/dev
 const OLLAMA_HTTPS_PROXY: &str = "http://127.0.0.1:11434/api/chat"; // wasm/prod (HARUS HTTPS)
 // const OLLAMA_MODEL: &str = "deepseek-r1:8b";
 const OLLAMA_MODEL: &str = "llama3.1:8b";
@@ -30,13 +36,9 @@ const MODEL_SUPPORTS_TOOLS: bool = true; // DeepSeek R1: tools TIDAK didukung
 const TOOL_TAG_OPEN: &str = "<tool>";
 const TOOL_TAG_CLOSE: &str = "</tool>";
 // ===================== ALLOWLIST TOKEN =====================
-#[derive(Clone, Debug)]
-struct TokenEntry { symbol: &'static str, ledger: &'static str, decimals: u8 }
+// #[derive(Clone, Debug)]
+// struct TokenEntry { symbol: &'static str, ledger: &'static str, decimals: u8 }
 
-const TOKENS: &[TokenEntry] = &[
-    TokenEntry { symbol: "ICP",  ledger: "<LEDGER_ICP_ID>",              decimals: 8 },
-    TokenEntry { symbol: "CFXN", ledger: "mxzaz-hqaaa-aaaar-qaada-cai",  decimals: 0 },
-];
 
 // ===================== STORAGE SEDERHANA =====================
 #[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
@@ -53,53 +55,69 @@ thread_local! {
     static EXECUTED_CHECKSUMS:  RefCell<BTreeSet<String>>                  = RefCell::new(BTreeSet::new());
 }
 
-// ===================== SYSTEM PROMPT =====================
-// const SYSTEM_PROMPT: &str = r#"
-// You are a finance copilot for ICRC tokens on the Internet Computer.
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+pub struct SwapPlan {
+    pub sell_symbol: String,
+    pub buy_symbol: String,
+    pub amount_in: Nat,          // minimal units of sell token
+    pub expected_out: Nat,       // minimal units of buy token (quote)
+    pub min_out: Nat,            // after slippage
+    pub slippage_pct: f64,       // e.g., 0.5
+    pub fee_bps: u32,            // pool fee
+    pub pool_id: Principal,
+    pub zero_for_one: bool,
+    pub human_readable: String,
+    pub checksum: String,
+}
 
-// LANGUAGE
-// - Reply ONLY in English
+thread_local! {
+    static LAST_SWAP_BY_CALLER: RefCell<BTreeMap<Principal, SwapPlan>> = RefCell::new(BTreeMap::new());
+    static SWAP_PLAN_BY_CHECKSUM: RefCell<BTreeMap<String, SwapPlan>> = RefCell::new(BTreeMap::new());
+}
 
-// STYLE
-// - Be brief (1–2 sentences per step).
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+struct IcsToken { address: String, standard: String }
 
-// SCOPE & DEFAULTS
-// - Backend decides ledger/decimals/fees from an allowlist. Never ask the user for a ledger ID.
-// - If token symbol is missing, ask once; otherwise proceed. Memo is optional.
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+struct IcsGetPoolArgs { fee: Nat, token0: IcsToken, token1: IcsToken }
 
-// SLOT FILLING
-// - Required: recipient (principal/alias) and amount (decimal string). Memo optional.
-// - If a required field is missing, ask EXACTLY ONE short question. Do NOT call tools yet.
-// - No placeholders: "", "-", "unknown", "tbd", "null", "?".
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+struct IcsPoolData {
+    fee: Nat,
+    key: String,
+    tickSpacing: i128,
+    token0: IcsToken,
+    token1: IcsToken,
+    canisterId: Principal, // SwapPool canister
+}
 
-// AMOUNT
-// - Accept inputs like “10 CFXN” or “0.5 ICP” and extract the number as amount_dec.
-// - If a tool returns BadAmount with an example, use that example next time.
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+struct IcsSwapArgs {
+    amountIn: String,          // text nat
+    zeroForOne: bool,
+    amountOutMinimum: String,  // text nat
+}
 
-// TOOL CALLING (STRICT)
-// - Call plan_transfer once recipient & amount are known. Params: to, amount_dec, memo (optional). symbol/ledger/decimals optional (backend overrides).
-// - After plan_transfer: show one-line summary (human_readable) and ask explicit confirmation (“confirm” / “lanjut” / “ya”).
-// - On confirmation: CALL confirm_transfer. If plan object is missing, you may call with only checksum OR with no parameters; backend uses the last plan.
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+enum IcsError { CommonError, InsufficientFunds, InternalError(String), UnsupportedToken(String) }
 
-// ERROR HANDLING
-// - If tool returns {"status":"err",...}:
-//   1) Ask ONE short question to fix that field in the user's language.
-//   2) Show "options" briefly if provided.
-//   3) Show ONE "example" if provided.
-//   4) Do NOT call tools again until the field is provided.
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+enum IcsResultNat { ok(Nat), err(IcsError) }
 
-// HYGIENE
-// - Do not re-ask fields already provided unless a tool says they are invalid/missing.
 
-// THINKING
-// - Do NOT output chain-of-thought or <think> blocks. Provide only the final answer or a tool call.
+fn swap_checksum(p: &SwapPlan) -> String {
+    let mut h = Sha256::new();
+    h.update(p.sell_symbol.as_bytes());
+    h.update(p.buy_symbol.as_bytes());
+    h.update(p.amount_in.to_string().as_bytes());
+    h.update(p.expected_out.to_string().as_bytes());
+    h.update(p.min_out.to_string().as_bytes());
+    h.update(p.pool_id.as_slice());
+    h.update(p.fee_bps.to_le_bytes());
+    h.update(&[p.zero_for_one as u8]);
+    hex::encode(&h.finalize()[..8])
+}
 
-// OUTPUT RULES
-// - Do NOT output JSON or code fences (```).
-// - User-facing replies must be brief plain sentences only (no lists unless asked).
-// - After a tool result (role=tool), summarize in ONE short sentence; never show raw JSON.
-
-// "#;
 fn tool_proxy_instructions() -> &'static str {
     r#"
 TOOL CALLING (NO NATIVE TOOLS)
@@ -228,6 +246,28 @@ fn plan_checksum(p: &TransferPlan) -> String {
 fn is_placeholder(s: &str) -> bool {
     let t = s.trim().to_ascii_lowercase();
     t.is_empty() || matches!(t.as_str(), "unknown" | "tbd" | "-" | "null" | "?" | "n/a")
+}
+async fn icpswap_quote(pool: Principal, zero_for_one: bool, amount_in_units: &Nat)
+-> Result<Nat, String> {
+    let args = IcsSwapArgs {
+        zeroForOne: zero_for_one,
+        amountIn: amount_in_units.to_string(),
+        amountOutMinimum: "0".into(),
+    };
+    let (res,): (IcsResultNat,) = ic_cdk::call(pool, "quote", (args,))
+        .await
+        .map_err(|e| format!("quote call fail: {e:?}"))?;
+    match res { IcsResultNat::ok(v) => Ok(v), IcsResultNat::err(e) => Err(format!("quote err: {e:?}")) }
+}
+
+fn apply_slippage_min_out(expected_out: &Nat, slippage_pct: f64) -> Nat {
+    // floor(expected_out * (1 - s/100))
+    use num_bigint::BigUint; use num_traits::ToPrimitive;
+    let hundred = BigUint::from(10000u32); // basis points ×100 agar aman pecahan
+    let s_bp_x100 = (slippage_pct * 100.0).round() as u32;
+    let num = BigUint::from( (10000u32).saturating_sub(s_bp_x100) );
+    let e: BigUint = expected_out.clone().into();
+    Nat::from( e * num / &hundred )
 }
 
 // ===================== ICRC-2 EXECUTION =====================
@@ -434,7 +474,110 @@ async fn handle_tool_call_ollama(name: &str, args: Value) -> (String, String) {
             let v = ACCOUNTS.with(|m| serde_json::to_string(&m.borrow().values().cloned().collect::<Vec<_>>()).unwrap());
             ("list_accounts".into(), v)
         }
+        "plan_swap" => {
+            #[derive(Deserialize)]
+            struct A { from_symbol:String, to_symbol:String, amount_in_dec:String, slippage_pct:Option<f64> }
+            let a: A = serde_json::from_value(tool_args_json(name, &args))
+                .map_err(|e| e.to_string()).unwrap();
 
+            if is_placeholder(&a.from_symbol) { return (name.into(), json!({"status":"err","code":"NeedToken","field":"from_symbol","options": token_symbols()}).to_string()); }
+            if is_placeholder(&a.to_symbol)   { return (name.into(), json!({"status":"err","code":"NeedToken","field":"to_symbol","options": token_symbols()}).to_string()); }
+            if is_placeholder(&a.amount_in_dec) { return (name.into(), json!({"status":"err","code":"NeedAmount","field":"amount_in_dec","example":"1.0"}).to_string()); }
+
+            let sell = match resolve_token_entry(&a.from_symbol) { Ok(t)=>t, Err(e)=> return (name.into(), json!({"status":"err","code":"BadToken","field":"from_symbol","error":e,"options":token_symbols()}).to_string()) };
+            let buy  = match resolve_token_entry(&a.to_symbol)   { Ok(t)=>t, Err(e)=> return (name.into(), json!({"status":"err","code":"BadToken","field":"to_symbol","error":e,"options":token_symbols()}).to_string()) };
+
+            // 1) cari pool
+            let pool = match icpswap_get_pool(sell, buy, DEFAULT_POOL_FEE_BPS).await {
+                Ok(p)=>p, Err(e)=> return (name.into(), json!({"status":"err","code":"NoPool","error":e}).to_string())
+            };
+
+            // 2) tentukan arah
+            let zero_for_one =
+                pool.token0.address.eq_ignore_ascii_case(sell.ledger);
+
+            // 3) scale amount_in
+            let amount_in = match scale_amount(&a.amount_in_dec, sell.decimals) {
+                Ok(n)=>n, Err(e)=> return (name.into(), json!({"status":"err","code":"BadAmount","field":"amount_in_dec","error":e,"example": example_for_decimals(sell.decimals)}).to_string())
+            };
+
+            // 4) quote
+            let pool_id = pool.canisterId;
+            let expected_out = match icpswap_quote(pool_id, zero_for_one, &amount_in).await {
+                Ok(v)=>v, Err(e)=> return (name.into(), json!({"status":"err","code":"QuoteError","error":e}).to_string())
+            };
+
+            // 5) slippage
+            let slippage = a.slippage_pct.unwrap_or(0.5);
+            let min_out = apply_slippage_min_out(&expected_out, slippage);
+
+            // 6) build plan
+            let hr = format!(
+                "Swap {} {} → ≈{} {} (min {}). Fee {} bps; pool {}.",
+                &a.amount_in_dec, sell.symbol,
+                expected_out, buy.symbol,
+                min_out, DEFAULT_POOL_FEE_BPS, pool_id.to_text()
+            );
+            let mut plan = SwapPlan {
+                sell_symbol: sell.symbol.into(),
+                buy_symbol:  buy.symbol.into(),
+                amount_in: amount_in.clone(),
+                expected_out: expected_out.clone(),
+                min_out: min_out.clone(),
+                slippage_pct: slippage,
+                fee_bps: DEFAULT_POOL_FEE_BPS,
+                pool_id, zero_for_one,
+                human_readable: hr,
+                checksum: String::new(),
+            };
+            plan.checksum = swap_checksum(&plan);
+
+            let caller = ic_cdk::api::caller();
+            LAST_SWAP_BY_CALLER.with(|m| { m.borrow_mut().insert(caller, plan.clone()); });
+            SWAP_PLAN_BY_CHECKSUM.with(|m| { m.borrow_mut().insert(plan.checksum.clone(), plan.clone()); });
+
+            (name.into(), serde_json::to_string(&plan).unwrap())
+        }
+
+        "confirm_swap" => {
+            // ambil last plan by caller (atau by checksum jika dikirim)
+            #[derive(Deserialize)] struct A { checksum: Option<String> }
+            let a: A = serde_json::from_value(tool_args_json(name, &args)).unwrap_or(A{checksum:None});
+            let plan = if let Some(cs) = a.checksum {
+                SWAP_PLAN_BY_CHECKSUM.with(|m| m.borrow().get(&cs).cloned())
+            } else {
+                let caller = ic_cdk::api::caller();
+                LAST_SWAP_BY_CALLER.with(|m| m.borrow().get(&caller).cloned())
+            };
+            let Some(plan) = plan else {
+                return (name.into(), json!({"status":"err","code":"MissingPlan"}).to_string());
+            };
+
+            // anti-replay
+            let dup = EXECUTED_CHECKSUMS.with(|s| s.borrow().contains(&plan.checksum));
+            if dup { return (name.into(), json!({"status":"err","code":"Duplicate"}).to_string()); }
+
+            // panggil SwapPool.swap
+            let args = IcsSwapArgs {
+                zeroForOne: plan.zero_for_one,
+                amountIn: plan.amount_in.to_string(),
+                amountOutMinimum: plan.min_out.to_string(),
+            };
+            let (res,): (IcsResultNat,) =
+                ic_cdk::call(plan.pool_id, "swap", (args,))
+                .await
+                // .map_err(|e| e.to_string())
+                .map_err(|e| "e.to_string()")
+                .unwrap_or((IcsResultNat::err(IcsError::InternalError("call fail".into())),));
+
+            match res {
+                IcsResultNat::ok(out) => {
+                    EXECUTED_CHECKSUMS.with(|s| s.borrow_mut().insert(plan.checksum.clone()));
+                    (name.into(), json!({"status":"ok","amount_out": out.to_string()}).to_string())
+                }
+                IcsResultNat::err(e) => (name.into(), json!({"status":"err","code":"ExecError","error": format!("{e:?}")}).to_string())
+            }
+        }
         _ => (name.to_string(), json!({"status":"err","error":"unknown tool"}).to_string()),
     }
 }
@@ -486,14 +629,14 @@ struct OllamaFunction { name: String, arguments: Value }
 
 #[derive(Deserialize, Clone)]
 struct OllamaToolCall {
-    #[serde(default)] id: Option<String>,
-    #[serde(default, rename="type")] kind: Option<String>,
+    // #[serde(default)] id: Option<String>,
+    // #[serde(default, rename="type")] kind: Option<String>,
     function: OllamaFunction,
 }
 
 #[derive(Deserialize)]
 struct OllamaMessageResp {
-    role: String,
+    // role: String,
     content: String,
     #[serde(default)]
     tool_calls: Vec<OllamaToolCall>,
@@ -550,7 +693,25 @@ fn build_ollama_tools_transfer() -> Value {
         "name": "list_accounts",
         "description": "List saved accounts",
         "parameters": { "type":"object", "properties": {} }
+      }},
+       // 🔽 Tambahkan ini:
+    { "type":"function","function":{
+      "name":"plan_swap",
+      "description":"Plan a token swap on ICPswap (quote + slippage).",
+      "parameters":{ "type":"object","properties":{
+        "from_symbol":{"type":"string"},
+        "to_symbol":{"type":"string"},
+        "amount_in_dec":{"type":"string"},
+        "slippage_pct":{"type":"number"}
+      }, "required":["from_symbol","to_symbol","amount_in_dec"] }
+    }},
+    { "type":"function","function":{
+      "name":"confirm_swap",
+      "description":"Execute swap on SwapPool after confirmation.",
+      "parameters":{ "type":"object","properties":{
+        "checksum":{"type":"string"}
       }}
+    }}
     ])
 }
 
@@ -649,7 +810,7 @@ async fn ollama_chat_once(messages: Vec<OllamaMsg>, tools: Option<Value>) -> Res
     let max_resp: u64 = 200_000; // 200 KB cukup untuk teks + tool_calls kecil
 
     // Try #1: kirim cycles "aman"
-    let mut req = CanisterHttpRequestArgument {
+    let req = CanisterHttpRequestArgument {
         url: OLLAMA_HTTPS_PROXY.to_string(), // harus HTTPS (proxy ke Ollama)
         method: HttpMethod::POST,
         body: Some(body),

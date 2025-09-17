@@ -1,6 +1,7 @@
 use candid::{CandidType, Nat, Principal};
 use icrc_ledger_types::icrc1::transfer::Memo;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 /// Allowlisted token configuration.
 #[derive(Clone, Debug)]
@@ -11,14 +12,19 @@ pub struct TokenEntry {
     pub ledger: &'static str,
     /// Number of decimal places used by the token.
     pub decimals: u8,
+    pub standard: &'static str
 }
 const OLLAMA_URL: &str = "http://127.0.0.1:11434"; // untuk non-wasm/dev
 const OLLAMA_HTTPS_PROXY: &str = "https://your-proxy.example.com/api/chat"; // <-- pakai ini di wasm
 const OLLAMA_MODEL: &str = "deepseek-r1:8b";
+
+pub const ICPSWAP_FACTORY: &str = "vpyes-67777-77774-qaaeq-cai";
+// "4mmnk-kiaaa-aaaag-qbllq-cai"; // SwapFactory mainnet (docs)
+pub const DEFAULT_POOL_FEE_BPS: u32 = 3000; // 0.3%
 /// Tokens permitted for transfers.
 pub const TOKENS: &[TokenEntry] = &[
-    TokenEntry { symbol: "ICP",  ledger: "<LEDGER_ICP_ID>",      decimals: 8 },
-    TokenEntry { symbol: "CFX", ledger: "umunu-kh777-77774-qaaca-cai",     decimals: 0 },
+    TokenEntry { symbol: "ICP",  ledger: "<LEDGER_ICP_ID>",      decimals: 8, standard: "ICP" },
+    TokenEntry { symbol: "CFX", ledger: "umunu-kh777-77774-qaaca-cai",     decimals: 0, standard: "ICRC2" },
 ];
 
 /// Stored reference to a user account alias.
@@ -116,3 +122,33 @@ struct OllamaMessageResp {
 struct OllamaChatResp {
     message: OllamaMessageResp,
 }
+
+// ========================== SWAP 
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+struct IcsToken { address: String, standard: String }
+
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+struct IcsGetPoolArgs { fee: Nat, token0: IcsToken, token1: IcsToken }
+
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+struct IcsPoolData {
+    fee: Nat,
+    key: String,
+    tickSpacing: i128,
+    token0: IcsToken,
+    token1: IcsToken,
+    canisterId: Principal, // SwapPool canister
+}
+
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+struct IcsSwapArgs {
+    amountIn: String,          // text nat
+    zeroForOne: bool,
+    amountOutMinimum: String,  // text nat
+}
+
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+enum IcsError { CommonError, InsufficientFunds, InternalError(String), UnsupportedToken(String) }
+
+#[derive(Clone, Debug, CandidType, Deserialize, Serialize)]
+enum IcsResultNat { ok(Nat), err(IcsError) }
